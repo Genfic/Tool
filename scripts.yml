@@ -5,3 +5,5 @@ scripts:
   format:
     cmd: deno fmt
     gitHook: pre-commit
+
+  bundlesize: deno run --allow-read .\index.ts bundlesize "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\{dist,bundle}/**/*.js"

@@ -1,21 +1,8 @@
+import { ch } from './chars.ts';
+import { bold } from 'https://deno.land/std@0.95.0/fmt/colors.ts';
+import { title } from './stringUtils.ts';
+
 export class Table {
-	constructor() {
-	}
-
-	private ch = {
-		tl: '┌',
-		tr: '┐',
-		bl: '└',
-		br: '┘',
-		h: '─',
-		v: '│',
-		ml: '├',
-		mr: '┤',
-		tm: '┬',
-		bm: '┴',
-		mm: '┼',
-	};
-
 	#header?: string[];
 	#body: string[][] = [[]];
 	#footer?: string[];
@@ -71,7 +58,7 @@ export class Table {
 		console.log(this.buildHorizontalBorder(colWidths, 'top'));
 
 		if (this.#header) {
-			console.log(this.buildRow(this.#header, colWidths));
+			console.log(this.buildRow(this.#header.map(title), colWidths, true));
 			console.log(this.buildHorizontalBorder(colWidths, 'middle'));
 		}
 
@@ -86,26 +73,31 @@ export class Table {
 		console.log(this.buildHorizontalBorder(colWidths, 'bottom'));
 	}
 
-	private buildRow(row: string[], colWidths: number[]) {
+	private buildRow(row: string[], colWidths: number[], emphasis = false) {
 		const rs = [];
 		for (const [k, v] of colWidths.entries()) {
-			rs.push(`${row[k]}`.padEnd(v));
+			if (emphasis) {
+				const em = bold(`${row[k]}`);
+				rs.push(em.padEnd(v + (em.length - `${row[k]}`.length)));
+			} else {
+				rs.push(`${row[k]}`.padEnd(v));
+			}
 		}
-		return `${this.ch.v} ` + rs.join(` ${this.ch.v} `) + ` ${this.ch.v}`;
+		return `${ch.v} ` + rs.join(` ${ch.v} `) + ` ${ch.v}`;
 	}
 
 	private buildHorizontalBorder(colWidths: number[], position: 'top' | 'middle' | 'bottom') {
 		const border = [];
 		for (const width of colWidths) {
-			border.push(this.ch.h.repeat(width));
+			border.push(ch.h.repeat(width));
 		}
 		switch (position) {
 			case 'top':
-				return `${this.ch.tl}${this.ch.h}` + border.join(`${this.ch.h}${this.ch.tm}${this.ch.h}`) + `${this.ch.h}${this.ch.tr}`;
+				return `${ch.tl}${ch.h}` + border.join(`${ch.h}${ch.tm}${ch.h}`) + `${ch.h}${ch.tr}`;
 			case 'middle':
-				return `${this.ch.ml}${this.ch.h}` + border.join(`${this.ch.h}${this.ch.mm}${this.ch.h}`) + `${this.ch.h}${this.ch.mr}`;
+				return `${ch.ml}${ch.h}` + border.join(`${ch.h}${ch.mm}${ch.h}`) + `${ch.h}${ch.mr}`;
 			case 'bottom':
-				return `${this.ch.bl}${this.ch.h}` + border.join(`${this.ch.h}${this.ch.bm}${this.ch.h}`) + `${this.ch.h}${this.ch.br}`;
+				return `${ch.bl}${ch.h}` + border.join(`${ch.h}${ch.bm}${ch.h}`) + `${ch.h}${ch.br}`;
 		}
 	}
 }
