@@ -1,57 +1,57 @@
-import { ensureDir } from "https://deno.land/std@0.140.0/fs/mod.ts";
+import { ensureDir } from 'https://deno.land/std@0.140.0/fs/mod.ts';
 
 const paths: { [key: string]: string } = {
-	public: "https://localhost:5001/swagger/public/swagger.json",
-	internal: "https://localhost:5001/swagger/internal/swagger.json",
+	public: 'https://localhost:5001/swagger/public/swagger.json',
+	internal: 'https://localhost:5001/swagger/internal/swagger.json',
 };
 
 const replaceType = (type: string): string => {
 	return (
 		{
-			integer: "number",
-			decimal: "number",
-			double: "number",
-			float: "number",
-			bool: "boolean",
-			string: "string",
-		}[type] ?? "any"
+			integer: 'number',
+			decimal: 'number',
+			double: 'number',
+			float: 'number',
+			bool: 'boolean',
+			string: 'string',
+		}[type] ?? 'any'
 	);
 };
 
 const buildParams = (parameters: Map<number, Parameter>): string => {
 	const params = [];
 	for (const [_, param] of Object.entries(parameters)) {
-		if (param.in !== "path" && param.in !== "query") continue;
+		if (param.in !== 'path' && param.in !== 'query') continue;
 		let p = param.name;
-		p += ": ";
+		p += ': ';
 		p += replaceType(param.schema.type);
 		params.push(p);
 	}
-	return params.join(", ");
+	return params.join(', ');
 };
 
 const buildQuery = (parameters: Map<number, Parameter>): string => {
 	const params = [];
 	for (const [_, param] of Object.entries(parameters)) {
-		if (param.in !== "query") continue;
+		if (param.in !== 'query') continue;
 		let p = param.name;
-		p += "=${";
+		p += '=${';
 		p += param.name;
-		p += "}";
+		p += '}';
 		params.push(p);
 	}
-	return params.length > 0 ? `?${params.join("&")}` : "";
+	return params.length > 0 ? `?${params.join('&')}` : '';
 };
 
 const buildFunction = (path: string, method: string, meta: Route) => {
-	let fun = "export const ";
+	let fun = 'export const ';
 	fun += meta.operationId;
-	fun += " = (";
-	fun += meta.parameters ? buildParams(meta.parameters).toLowerCase() : "";
-	fun += ") => `";
-	fun += path.replaceAll("{", "${").toLowerCase();
-	fun += meta.parameters ? buildQuery(meta.parameters).toLowerCase() : "";
-	fun += "`;";
+	fun += ' = (';
+	fun += meta.parameters ? buildParams(meta.parameters).toLowerCase() : '';
+	fun += ') => `';
+	fun += path.replaceAll('{', '${').toLowerCase();
+	fun += meta.parameters ? buildQuery(meta.parameters).toLowerCase() : '';
+	fun += '`;';
 	return fun;
 };
 
@@ -76,11 +76,11 @@ ensureDir(outDir);
 for (const [key, val] of Object.entries(paths)) {
 	console.log(`Generating paths for: ${key}`);
 	const paths = await generatePaths(val);
-	await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, paths.join("\n"));
+	await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, paths.join('\n'));
 }
 
 interface SwaggerResponse {
-	"x-generator": string;
+	'x-generator': string;
 	openapi: string;
 	info: { title: string; version: string };
 	paths: Map<string, Path>;

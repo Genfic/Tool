@@ -1,0 +1,7 @@
+# https://velociraptor.run/
+scripts:
+  start: ./index.ts
+  release: deno compile ./index.ts
+  format:
+    cmd: deno fmt
+    gitHook: pre-commit

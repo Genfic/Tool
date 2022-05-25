@@ -1,6 +1,6 @@
-import { listenAndServe } from "https://deno.land/std@0.110.0/http/server.ts";
+import { listenAndServe } from 'https://deno.land/std@0.110.0/http/server.ts';
 
-const base = new URL("../Ogma3/wwwroot/css/dist/", import.meta.url);
+const base = new URL('../Ogma3/wwwroot/css/dist/', import.meta.url);
 
 const addr = ':4001';
 
