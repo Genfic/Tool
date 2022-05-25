@@ -5,7 +5,7 @@ import { title } from './stringUtils.ts';
 export class Table {
 	#header?: string[];
 	#body: string[][] = [[]];
-	#footer?: string[];
+	#footer: string[][] = [[]];
 
 	header(header: string[]) {
 		this.#header = header;
@@ -28,7 +28,7 @@ export class Table {
 		return this;
 	}
 
-	footer(footer: string[]) {
+	footer(footer: string[][]) {
 		this.#footer = footer;
 		return this;
 	}
@@ -37,12 +37,12 @@ export class Table {
 		return [
 			this.#header,
 			...this.#body,
-			this.#footer,
+			...this.#footer,
 		].join('\n');
 	}
 
 	render() {
-		const allRows = [this.#header ?? [], this.#footer ?? [], ...this.#body];
+		const allRows = [this.#header ?? [], ...this.#footer, ...this.#body];
 
 		const cols = Math.max(...allRows.map((r) => r.length));
 		const colWidths = allRows
@@ -50,7 +50,7 @@ export class Table {
 			.reduce((prev, curr) => {
 				const out = prev;
 				for (let i = 0; i < cols; i++) {
-					out[i] = Math.max(prev[i], curr[i]);
+					out[i] = Math.max(prev[i], curr[i] ?? 0);
 				}
 				return out;
 			});
@@ -68,7 +68,9 @@ export class Table {
 
 		if (this.#footer) {
 			console.log(this.buildHorizontalBorder(colWidths, 'middle'));
-			console.log(this.buildRow(this.#footer, colWidths));
+			for (const row of this.#footer) {
+				console.log(this.buildRow(row, colWidths));
+			}
 		}
 		console.log(this.buildHorizontalBorder(colWidths, 'bottom'));
 	}
@@ -76,11 +78,13 @@ export class Table {
 	private buildRow(row: string[], colWidths: number[], emphasis = false) {
 		const rs = [];
 		for (const [k, v] of colWidths.entries()) {
+			const r = (row[k] ?? '').toString();
+
 			if (emphasis) {
-				const em = bold(`${row[k]}`);
-				rs.push(em.padEnd(v + (em.length - `${row[k]}`.length)));
+				const em = bold(r);
+				rs.push(em.padEnd(v + (em.length - r.length)));
 			} else {
-				rs.push(`${row[k]}`.padEnd(v));
+				rs.push(r.padEnd(v));
 			}
 		}
 		return `${ch.v} ` + rs.join(` ${ch.v} `) + ` ${ch.v}`;
