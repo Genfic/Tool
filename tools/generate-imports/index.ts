@@ -12,7 +12,6 @@ export const generateImports = async (source: string, dest: string) => {
 	const tags: { tag: string; priority: number }[] = [];
 
 	const path = new URL(source, import.meta.url);
-	console.log(path);
 	for await (const f of Deno.readDir(source)) {
 		const name = f.name.split('.')[1];
 		tags.push({ tag: f.name, priority: priorities.get(name) ?? 0 });
