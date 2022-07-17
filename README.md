@@ -1,5 +1,9 @@
 # Ogma3 Tools
 
+## Installation
+
+`vr install` to install the tool locally
+
 ## Tools
 
 ### Bundlesize
