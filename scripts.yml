@@ -2,7 +2,7 @@
 scripts:
   start: ./index.ts
   release: deno compile -A --output ./bin/ogma-tool index.ts
-  install: deno install -A -n ogma-tool index.ts
+  install: deno install -f -A -n ogma-tool index.ts
   format:
     cmd: deno fmt
     gitHook: pre-commit
