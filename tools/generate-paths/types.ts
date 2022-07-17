@@ -27,6 +27,7 @@ export interface RequestBody {
 }
 
 export interface Component {
+  enum: Map<number, string>;
   properties: Map<string, Type>;
 }
 
@@ -34,4 +35,5 @@ export interface Type {
   type: string;
   format: string | undefined;
   nullable: boolean | undefined;
+  $ref: string;
 }
