@@ -27,7 +27,7 @@ interface ResponseObject {
 	content: { 'application/json': { schema: Schema } };
 }
 
-export type Schema = { $ref: string } | { type: string } | { type: 'array', items: { $ref?: string, type?: string } };
+export type Schema = { $ref: string } | { type: string } | { type: 'array'; items: { $ref?: string; type?: string } };
 
 export interface RequestBody {
 	'x-name': string;

@@ -1,6 +1,6 @@
 import { ensureDir } from 'https://deno.land/std@0.140.0/fs/mod.ts';
-import od from 'http://deno.land/x/outdent/mod.ts'
-import {Component, Parameter, Route, Schema, SwaggerResponse, Type} from './types.ts';
+import od from 'http://deno.land/x/outdent/mod.ts';
+import { Component, Parameter, Route, Schema, SwaggerResponse, Type } from './types.ts';
 
 const replaceType = (type: string): string => {
 	return (
@@ -59,7 +59,7 @@ const buildFunction = (
 
 	const resTypes = Object.values(meta.responses)
 		.map((e: ResponseObject) => e.content?.['application/json']?.schema)
-		.filter(e => !!e)
+		.filter((e) => !!e)
 		.map((e: Schema) => {
 			if (e.$ref) return e.$ref.split('/').at(-1);
 			if (e.type === 'array' && e.items.$ref) return `${e.items.$ref?.split('/').at(-1) ?? 'the_hell'}[]`;
@@ -174,7 +174,9 @@ export const generatePaths = async (
 		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join('\n\n'));
 	}
 
-	await Deno.writeTextFile(`${outDir}/typed-fetch.ts`, od`
+	await Deno.writeTextFile(
+		`${outDir}/typed-fetch.ts`,
+		od`
 		export interface TypedResponse<TData> extends Response {
     		data: TData;
 		}
@@ -198,5 +200,6 @@ export const generatePaths = async (
             const data: TOut = await res.json();
             return { ...res, data };
 		}
-	`);
+	`,
+	);
 };
