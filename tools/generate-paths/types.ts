@@ -12,6 +12,7 @@ export interface Route {
 	tags: string[];
 	operationId: string;
 	parameters?: Map<number, Parameter>;
+	responses?: Map<number, ResponseObject>;
 	requestBody: RequestBody | null;
 }
 
@@ -20,6 +21,13 @@ export interface Parameter {
 	in: string;
 	schema: { type: string; nullable: boolean };
 }
+
+interface ResponseObject {
+	description: string;
+	content: { 'application/json': { schema: Schema } };
+}
+
+export type Schema = { $ref: string } | { type: string } | { type: 'array', items: { $ref?: string, type?: string } };
 
 export interface RequestBody {
 	'x-name': string;

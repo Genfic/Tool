@@ -1,5 +1,6 @@
 import { ensureDir } from 'https://deno.land/std@0.140.0/fs/mod.ts';
-import { Component, Parameter, Route, SwaggerResponse, Type } from './types.ts';
+import od from 'http://deno.land/x/outdent/mod.ts'
+import {Component, Parameter, Route, Schema, SwaggerResponse, Type} from './types.ts';
 
 const replaceType = (type: string): string => {
 	return (
@@ -10,6 +11,8 @@ const replaceType = (type: string): string => {
 			float: 'number',
 			bool: 'boolean',
 			string: 'string',
+			number: 'number',
+			boolean: 'boolean',
 		}[type] ?? 'any'
 	);
 };
@@ -54,16 +57,28 @@ const buildFunction = (
 	const bodyType = bodyRef?.split('/').at(-1);
 	const body = bodyType ? `body: ${bodyType}, ` : '';
 
-	const signature = `async (${body}${params}headers?: HeadersInit, options?: RequestInit)`;
+	const resTypes = Object.values(meta.responses)
+		.map((e: ResponseObject) => e.content?.['application/json']?.schema)
+		.filter(e => !!e)
+		.map((e: Schema) => {
+			if (e.$ref) return e.$ref.split('/').at(-1);
+			if (e.type === 'array' && e.items.$ref) return `${e.items.$ref?.split('/').at(-1) ?? 'the_hell'}[]`;
+			if (e.type === 'array' && e.items.type) return `${replaceType(e.items.type)}[]`;
+			if (e.type) return replaceType(e.type);
+			else return 'WTF';
+		});
+	const refTypeString = resTypes.join('|');
 
-	const func = `export const ${id} = ${signature} => await fetch (\`${url}${query}\`, { 
-    method: '${method}', 
-    headers: { 
-      'Content-Type': 'application/json', 
-      ...headers 
-    },${bodyType ? '\n    body: JSON.stringify(body),' : ''}
-    ...options 
-  });`;
+	const signature = `async (${body}${params}headers?: Headers, options?: RequestInit)`;
+
+	const func = od`
+		export const ${id} = ${signature} => await typedFetch<${refTypeString.length > 0 ? refTypeString : 'void'}>(\`${url}${query}\`,  
+			'${method}',
+			${bodyType ? 'body' : 'null'},
+			headers,
+			options
+		);
+	  `;
 
 	return { func, type: bodyType ?? null };
 };
@@ -140,17 +155,48 @@ export const generatePaths = async (
 	outDir: string,
 	paths: { [key: string]: string },
 ) => {
-	ensureDir(outDir);
+	await ensureDir(outDir);
 	for (const [key, val] of Object.entries(paths)) {
 		console.log(`Generating paths for: ${key}`);
 		const { paths, types, typeImports } = await generate(val);
 
-		const pathsFile = `import {
-\t${typeImports.join(',\n\t')}
-} from './types-${key}';\n
-${paths.join('\n\n')}`;
+		const pathsFile = od`
+			/* eslint-disable */
+			import {
+				${typeImports.join(',\n\t')}
+			} from './types-${key}';
+			import { typedFetch } from './typed-fetch';
+			
+			${paths.join('\n\n')}
+		`;
 
 		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
 		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join('\n\n'));
 	}
+
+	await Deno.writeTextFile(`${outDir}/typed-fetch.ts`, od`
+		export interface TypedResponse<TData> extends Response {
+    		data: TData;
+		}
+
+		export async function typedFetch<TOut>(
+            url: string, 
+            method: 'GET'|'POST'|'PUT'|'PATCH'|'DELETE'|'HEAD'|string, 
+            body?: object, 
+            headers?: Headers, 
+            options?: RequestInit
+		): Promise<TypedResponse<TOut>> {
+			const res = await fetch (url, { 
+				method: method, 
+				headers: { 
+				  'Content-Type': 'application/json', 
+				  ...headers 
+				},
+				body: body ? JSON.stringify(body) : null,
+				...options 
+			  });
+            const data: TOut = await res.json();
+            return { ...res, data };
+		}
+	`);
 };
