@@ -35,5 +35,6 @@ export interface Type {
 	type: string;
 	format: string | undefined;
 	nullable: boolean | undefined;
+	items: { type: string };
 	$ref: string;
 }
