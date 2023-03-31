@@ -1,28 +1,27 @@
-import * as path from "https://deno.land/std@0.181.0/path/mod.ts";
+import * as path from 'https://deno.land/std@0.181.0/path/mod.ts';
 import { expandGlobSync, WalkEntry } from 'https://deno.land/std@0.113.0/fs/mod.ts';
 import { Table } from '../../helpers/table.ts';
-import {FileData, PathData} from './types.ts';
+import { FileData, PathData } from './types.ts';
 import { compress as compressBrotli } from 'https://deno.land/x/brotli@v0.1.4/mod.ts';
 import { gzip as compressGzip } from 'https://deno.land/x/compress@v0.4.4/mod.ts';
 
 export const bundlesize = async (paths: string[]) => {
 	const p: { [key: string]: PathData[] } = paths
-		.map(p => ({
+		.map((p) => ({
 			name: path.basename(p),
 			dir: path.dirname(p),
-			path: p
+			path: p,
 		}))
 		.reduce((acc, item) => {
 			if (acc[item.dir]) {
-				acc[item.dir].push(item)
+				acc[item.dir].push(item);
 			} else {
-				acc[item.dir] = [item]
+				acc[item.dir] = [item];
 			}
 			return acc;
 		}, {});
 
 	for (const path in p) {
-
 		const files = p[path];
 
 		const plain: FileData[] = await Promise.all(files
