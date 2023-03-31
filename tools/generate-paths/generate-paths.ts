@@ -140,7 +140,7 @@ export const generatePaths = async (
 	outDir: string,
 	paths: { [key: string]: string },
 ) => {
-	ensureDir(outDir);
+	await ensureDir(outDir);
 	for (const [key, val] of Object.entries(paths)) {
 		console.log(`Generating paths for: ${key}`);
 		const { paths, types, typeImports } = await generate(val);
