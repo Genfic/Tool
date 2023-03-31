@@ -69,40 +69,47 @@ const buildFunction = (
 };
 
 const buildType = (name: string, component: Component): string | null => {
-	if (component.properties) {
-		const typeMappings: { [key: string]: string } = {
-			integer: 'number',
-			undefined: 'object',
-			array: 'object[]',
-		};
+    if (component.properties) {
+        const typeMappings: { [key: string]: string } = {
+            integer: 'number',
+            undefined: 'object',
+            array: 'object[]',
+        };
 
-		let type = `export interface ${name} {\n`;
+        let type = `export interface ${name} {\n`;
 
-		for (const [k, v] of Object.entries(component.properties)) {
-			let t = '';
-			if (v.type) {
-				t = typeMappings[v.type] ?? v.type;
-			} else if (v.$ref) {
-				t = v.$ref.split('/').at(-1);
-			} else {
-				continue;
-			}
+        for (const [propertyName, propertyMetadata] of Object.entries(component.properties)) {
+            let variableType = '';
+            if (propertyMetadata.type) {
+                if(propertyMetadata.type === 'array' && propertyMetadata.items) {
+                    variableType = typeMappings[propertyMetadata.items.type] ?? propertyMetadata.items.type + '[]';
+                } else if (propertyMetadata.$ref) {
+                    variableType = propertyMetadata.$ref.split('/').at(-1);
+                } else {
+                    variableType = typeMappings[propertyMetadata.type] ?? propertyMetadata.type;
+                }
+            } else {
+                continue;
+            }
 
-			type += `    ${k}: ${t}${v.nullable ? ' | null' : ''};\n`;
-		}
+            
+            type += `    ${propertyName}: ${variableType}${propertyMetadata.nullable ? ' | null' : ''};\n`;
+        }
 
-		type += '}';
-		return type;
-	} else if (component.enum) {
-		const type = `export type ${name} = ${
-			[...component.enum.values()]
-				.map((e) => `"${e}"`)
-				.join(' | ')
-		};`;
-		return type;
-	} else {
-		return null;
-	}
+        type += '}';
+
+        console.log(type);
+        return type;
+    } else if (component.enum) {
+        const type = `export type ${name} = ${
+            [...component.enum.values()]
+                .map((e) => `"${e}"`)
+                .join(' | ')
+        };`;
+        return type;
+    } else {
+        return null;
+    }
 };
 
 const generate = async (
