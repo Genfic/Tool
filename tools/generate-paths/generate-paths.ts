@@ -69,47 +69,46 @@ const buildFunction = (
 };
 
 const buildType = (name: string, component: Component): string | null => {
-    if (component.properties) {
-        const typeMappings: { [key: string]: string } = {
-            integer: 'number',
-            undefined: 'object',
-            array: 'object[]',
-        };
+	if (component.properties) {
+		const typeMappings: { [key: string]: string } = {
+			integer: 'number',
+			undefined: 'object',
+			array: 'object[]',
+		};
 
-        let type = `export interface ${name} {\n`;
+		let type = `export interface ${name} {\n`;
 
-        for (const [propertyName, propertyMetadata] of Object.entries(component.properties)) {
-            let variableType = '';
-            if (propertyMetadata.type) {
-                if(propertyMetadata.type === 'array' && propertyMetadata.items) {
-                    variableType = typeMappings[propertyMetadata.items.type] ?? propertyMetadata.items.type + '[]';
-                } else if (propertyMetadata.$ref) {
-                    variableType = propertyMetadata.$ref.split('/').at(-1);
-                } else {
-                    variableType = typeMappings[propertyMetadata.type] ?? propertyMetadata.type;
-                }
-            } else {
-                continue;
-            }
+		for (const [propertyName, propertyMetadata] of Object.entries(component.properties)) {
+			let variableType = '';
+			if (propertyMetadata.type) {
+				if (propertyMetadata.type === 'array' && propertyMetadata.items) {
+					variableType = typeMappings[propertyMetadata.items.type] ?? propertyMetadata.items.type + '[]';
+				} else if (propertyMetadata.$ref) {
+					variableType = propertyMetadata.$ref.split('/').at(-1);
+				} else {
+					variableType = typeMappings[propertyMetadata.type] ?? propertyMetadata.type;
+				}
+			} else {
+				continue;
+			}
 
-            
-            type += `    ${propertyName}: ${variableType}${propertyMetadata.nullable ? ' | null' : ''};\n`;
-        }
+			type += `    ${propertyName}: ${variableType}${propertyMetadata.nullable ? ' | null' : ''};\n`;
+		}
 
-        type += '}';
+		type += '}';
 
-        console.log(type);
-        return type;
-    } else if (component.enum) {
-        const type = `export type ${name} = ${
-            [...component.enum.values()]
-                .map((e) => `"${e}"`)
-                .join(' | ')
-        };`;
-        return type;
-    } else {
-        return null;
-    }
+		console.log(type);
+		return type;
+	} else if (component.enum) {
+		const type = `export type ${name} = ${
+			[...component.enum.values()]
+				.map((e) => `"${e}"`)
+				.join(' | ')
+		};`;
+		return type;
+	} else {
+		return null;
+	}
 };
 
 const generate = async (
