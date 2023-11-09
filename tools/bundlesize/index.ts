@@ -1,5 +1,5 @@
 import * as path from 'https://deno.land/std@0.181.0/path/mod.ts';
-import { format as bytes } from "https://deno.land/std@0.205.0/fmt/bytes.ts";
+import { format as bytes } from 'https://deno.land/std@0.205.0/fmt/bytes.ts';
 import { expandGlobSync, WalkEntry } from 'https://deno.land/std@0.113.0/fs/mod.ts';
 import { Table } from '../../helpers/table.ts';
 import { FileData, PathData } from './types.ts';
@@ -8,7 +8,7 @@ import { gzip as compressGzip } from 'https://deno.land/x/compress@v0.4.4/mod.ts
 
 export const bundlesize = async (paths: string[]) => {
 	const p: { [key: string]: PathData[] } = paths
-		.map(p => [...expandGlobSync(p)])
+		.map((p) => [...expandGlobSync(p)])
 		.flat()
 		.map((p: WalkEntry): PathData => ({
 			name: p.name,
@@ -38,15 +38,15 @@ export const bundlesize = async (paths: string[]) => {
 		const plain: FileData[] = await Promise.all(files
 			.map(async (x) => ({
 				name: x.name,
-				size: (await Deno.stat(x.path)).size
+				size: (await Deno.stat(x.path)).size,
 			})));
 
 		plain.sort((a, b) => b.size - a.size);
 
 		const table = new Table()
-			.objectBody(plain.map(fd => ({
+			.objectBody(plain.map((fd) => ({
 				name: fd.name,
-				size: bytes(fd.size)
+				size: bytes(fd.size),
 			})));
 
 		const totalSize = plain.map((f) => f.size).reduce((l, c) => l + c);
