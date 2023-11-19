@@ -1,7 +1,9 @@
 # https://velociraptor.run/
 scripts:
   start: ./index.ts
-  release: deno compile -A --output ./bin/ogma-tool index.ts
+  release:
+    - rm -r ./bin
+    - deno compile -A --output ./bin/ogma-tool index.ts
   install: deno install -f -A -n ogma-tool index.ts
   format:
     cmd: deno fmt
@@ -11,3 +13,4 @@ scripts:
   generate-imports: deno run --allow-read ./index.ts generate-imports "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
   generate-preloads: deno run --allow-read ./index.ts generate-preloads "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
   generate-paths: deno run --allow-net --unsafely-ignore-certificate-errors=localhost --allow-read --allow-write ./index.ts generate-paths "out" --path.public="https://localhost:5001/swagger/public/swagger.json" --path.internal="https://localhost:5001/swagger/internal/swagger.json"
+  generate-js-manifest: deno run --allow-read --allow-write ./index.ts generate-js-manifest "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js"
