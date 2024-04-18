@@ -1,42 +1,42 @@
-import { ensureDir } from 'https://deno.land/std@0.140.0/fs/mod.ts';
-import { Component, Parameter, Route, SwaggerResponse, Type } from './types.ts';
+import { ensureDir } from "https://deno.land/std@0.140.0/fs/mod.ts";
+import type { Component, Parameter, Route, SwaggerResponse } from "./types.ts";
 
 const replaceType = (type: string): string => {
 	return (
 		{
-			integer: 'number',
-			decimal: 'number',
-			double: 'number',
-			float: 'number',
-			bool: 'boolean',
-			string: 'string',
-		}[type] ?? 'any'
+			integer: "number",
+			decimal: "number",
+			double: "number",
+			float: "number",
+			bool: "boolean",
+			string: "string",
+		}[type] ?? "any"
 	);
 };
 
 const buildParams = (parameters: Map<number, Parameter>): string => {
 	const params = [];
 	for (const [_, param] of Object.entries(parameters)) {
-		if (param.in !== 'path' && param.in !== 'query') continue;
+		if (param.in !== "path" && param.in !== "query") continue;
 		let p = param.name;
-		p += ': ';
+		p += ": ";
 		p += replaceType(param.schema.type);
 		params.push(p);
 	}
-	return params.join(', ');
+	return params.join(", ");
 };
 
 const buildQuery = (parameters: Map<number, Parameter>): string => {
 	const params = [];
 	for (const [_, param] of Object.entries(parameters)) {
-		if (param.in !== 'query') continue;
+		if (param.in !== "query") continue;
 		let p = param.name;
-		p += '=${';
+		p += "=${";
 		p += param.name;
-		p += '}';
+		p += "}";
 		params.push(p);
 	}
-	return params.length > 0 ? `?${params.join('&')}` : '';
+	return params.length > 0 ? `?${params.join("&")}` : "";
 };
 
 const buildFunction = (
@@ -44,24 +44,32 @@ const buildFunction = (
 	method: string,
 	meta: Route,
 ): { func: string; type: string | null } => {
-	method = method.toUpperCase();
 	const id = meta.operationId;
-	const params = meta.parameters ? buildParams(meta.parameters).toLowerCase() + ', ' : '';
-	const url = path.replaceAll('{', '${').toLowerCase();
-	const query = meta.parameters ? buildQuery(meta.parameters).toLowerCase() : '';
+	const params = meta.parameters
+		? `${buildParams(meta.parameters).toLowerCase()}, `
+		: "";
+	const url = path.replaceAll("{", "${").toLowerCase();
+	const query = meta.parameters
+		? buildQuery(meta.parameters).toLowerCase()
+		: "";
 
-	const bodyRef = meta.requestBody?.content['application/json']?.schema?.$ref;
-	const bodyType = bodyRef?.split('/').at(-1);
-	const body = bodyType ? `body: ${bodyType}, ` : '';
+	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
+	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
+		? "`"
+		: '"';
+
+	const bodyRef = meta.requestBody?.content["application/json"]?.schema?.$ref;
+	const bodyType = bodyRef?.split("/").at(-1);
+	const body = bodyType ? `body: ${bodyType}, ` : "";
 
 	const signature = `async (${body}${params}headers?: HeadersInit, options?: RequestInit)`;
 
-	const func = `export const ${id} = ${signature} => await fetch (\`${url}${query}\`, { 
-    method: '${method}', 
+	const func = `export const ${id} = ${signature} => await fetch (${q}${url}${query}${q}, { 
+    method: '${method.toUpperCase()}', 
     headers: { 
       'Content-Type': 'application/json', 
       ...headers 
-    },${bodyType ? '\n    body: JSON.stringify(body),' : ''}
+    },${bodyType ? "\n    body: JSON.stringify(body)," : ""}
     ...options 
   });`;
 
@@ -71,44 +79,69 @@ const buildFunction = (
 const buildType = (name: string, component: Component): string | null => {
 	if (component.properties) {
 		const typeMappings: { [key: string]: string } = {
-			integer: 'number',
-			undefined: 'object',
-			array: 'object[]',
+			integer: "number",
+			undefined: "object",
+			array: "object[]",
 		};
 
 		let type = `export interface ${name} {\n`;
 
-		for (const [propertyName, propertyMetadata] of Object.entries(component.properties)) {
-			let variableType = '';
-			if (propertyMetadata.type) {
-				if (propertyMetadata.type === 'array' && propertyMetadata.items) {
-					variableType = typeMappings[propertyMetadata.items.type] ?? propertyMetadata.items.type + '[]';
-				} else if (propertyMetadata.$ref) {
-					variableType = propertyMetadata.$ref.split('/').at(-1);
+		type meta = {
+			type: string;
+			nullable: boolean;
+			items: meta;
+			$ref: string;
+			oneOf: meta[];
+		};
+		const constructType = (meta: meta): string | null => {
+			let variableType = "";
+			if (meta.type) {
+				if (meta.type === "array" && meta.items) {
+					variableType =
+						typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
 				} else {
-					variableType = typeMappings[propertyMetadata.type] ?? propertyMetadata.type;
+					variableType = typeMappings[meta.type] ?? meta.type;
 				}
+			} else if (meta.$ref) {
+				variableType = meta.$ref.split("/").at(-1) ?? "unknown";
+			} else if (meta.oneOf) {
+				let subtype = "";
+				for (const t of meta.oneOf) {
+					subtype += constructType(t);
+				}
+				variableType = subtype;
 			} else {
-				continue;
+				return null;
 			}
 
-			type += `    ${propertyName}: ${variableType}${propertyMetadata.nullable ? ' | null' : ''};\n`;
+			if (meta.nullable) {
+				variableType += " | null";
+			}
+
+			return variableType;
+		};
+
+		for (const [propertyName, propertyMetadata] of Object.entries(
+			component.properties,
+		)) {
+			const variableType = constructType(propertyMetadata);
+
+			type += `    ${propertyName}: ${variableType};\n`;
 		}
 
-		type += '}';
+		type += "}";
 
-		console.log(type);
 		return type;
-	} else if (component.enum) {
-		const type = `export type ${name} = ${
-			[...component.enum.values()]
-				.map((e) => `"${e}"`)
-				.join(' | ')
-		};`;
-		return type;
-	} else {
-		return null;
 	}
+
+	if (component.enum) {
+		const type = `export type ${name} = ${[...component.enum.values()]
+			.map((e) => `"${e}"`)
+			.join(" | ")};`;
+		return type;
+	}
+
+	return null;
 };
 
 const generate = async (
@@ -151,12 +184,12 @@ export const generatePaths = async (
 		console.log(`Generating paths for: ${key}`);
 		const { paths, types, typeImports } = await generate(val);
 
-		const pathsFile = `import {
-\t${typeImports.join(',\n\t')}
+		const pathsFile = `import type {
+\t${typeImports.join(",\n\t")}
 } from './types-${key}';\n
-${paths.join('\n\n')}`;
+${paths.join("\n\n")}`;
 
 		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
-		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join('\n\n'));
+		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join("\n\n"));
 	}
 };
