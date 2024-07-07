@@ -14,19 +14,14 @@ export class TypedResponse<TData> {
 		this.headers = res.headers;
 	}
 	json() {
-		return this.res.json();
+		return this.res.json() as Promise<TData>;
 	}
 	text() {
 		return this.res.text();
 	}
 	clone() {
 		return this.res.clone();
-	}
-
-	async data(): Promise<TData> {
-		return await this.res.json();
-	}
-	
+	}	
 }
 
 export async function typedFetch<TOut>(
