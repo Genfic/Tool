@@ -1,19 +1,35 @@
 export interface SwaggerResponse {
-	'x-generator': string;
+	"x-generator": string;
 	openapi: string;
 	info: { title: string; version: string };
 	paths: Map<string, Path>;
 	components: { schemas: Map<string, Component> };
 }
 
-export type Path = Map<string, Route>;
+export type Path = Map<
+	"get" | "put" | "post" | "delete" | "head" | "options",
+	Route
+>;
 
 export interface Route {
 	tags: string[];
 	operationId: string;
 	parameters?: Map<number, Parameter>;
 	requestBody: RequestBody | null;
+	responses: Map<string, Response>;
 }
+
+export interface Response {
+	description: string;
+	content:
+		| { "application/json": { schema: Schema } }
+		| { "application/octet-stream": { schema: Schema } };
+}
+
+export type Schema =
+	| { $ref: string }
+	| { type: string; nullable: boolean }
+	| { type: string; items: { $ref: string } | { type: string } };
 
 export interface Parameter {
 	name: string;
@@ -22,8 +38,8 @@ export interface Parameter {
 }
 
 export interface RequestBody {
-	'x-name': string;
-	content: { 'application/json': { schema: { $ref: string } } };
+	"x-name": string;
+	content: { "application/json": { schema: { $ref: string } } };
 }
 
 export interface Component {
