@@ -2,11 +2,34 @@
   "version": "3",
   "packages": {
     "specifiers": {
-      "jsr:@es-toolkit/es-toolkit@^1.8.0": "jsr:@es-toolkit/es-toolkit@1.8.0"
+      "jsr:@es-toolkit/es-toolkit@^1.13.1": "jsr:@es-toolkit/es-toolkit@1.13.1",
+      "jsr:@es-toolkit/es-toolkit@^1.8.0": "jsr:@es-toolkit/es-toolkit@1.8.0",
+      "jsr:@std/cli@^1.0.1": "jsr:@std/cli@1.0.1",
+      "jsr:@std/fmt@^0.225.6": "jsr:@std/fmt@0.225.6",
+      "jsr:@std/fs@^1.0.0": "jsr:@std/fs@1.0.0",
+      "jsr:@std/path@^1.0.2": "jsr:@std/path@1.0.2"
     },
     "jsr": {
+      "@es-toolkit/es-toolkit@1.13.1": {
+        "integrity": "1c5ccd77035a743e2f4c2b7ae822f2af123d78670f790612b8ea2c668a7c197f"
+      },
       "@es-toolkit/es-toolkit@1.8.0": {
         "integrity": "53dfb8ed4ad423221e3afabf9b99b796a0635df8e84491c0d3ff80bfe9b05ecf"
+      },
+      "@std/cli@1.0.1": {
+        "integrity": "d0661fba13b30e3c0121646589fa9beeeabe92482c6b04679ea0e7ec683d97f2"
+      },
+      "@std/fmt@0.225.6": {
+        "integrity": "aba6aea27f66813cecfd9484e074a9e9845782ab0685c030e453a8a70b37afc8"
+      },
+      "@std/fs@1.0.0": {
+        "integrity": "d72e4a125af7168d717a2ed1dca77a728b422b0d138fd20579e3fa41a77da943",
+        "dependencies": [
+          "jsr:@std/path@^1.0.2"
+        ]
+      },
+      "@std/path@1.0.2": {
+        "integrity": "a452174603f8c620bd278a380c596437a9eef50c891c64b85812f735245d9ec7"
       }
     }
   },
@@ -169,6 +192,7 @@
     "https://deno.land/x/compress@v0.4.4/gzip/mod.ts": "4ade8edbe01b54a84f289351e137ebdfc040a74cd616636770cf1724fbf522d1",
     "https://deno.land/x/compress@v0.4.4/gzip/writer_gunzip.ts": "5aba34394820b835c414048ac2e15f52d443f1f773ebe61fd2517c938572d616",
     "https://deno.land/x/compress@v0.4.4/gzip/writer_gzip.ts": "c7aad0c51ab4f5952c068088186339cfc79a2ee1e057d6e16731b1175f342645",
+    "https://deno.land/x/compress@v0.4.4/interface.ts": "fc5f87bd208ab8a03a1f65972b11781967c3d21c3d756fe9ae99ca98e10e5780",
     "https://deno.land/x/compress@v0.4.4/mod.ts": "ae8b15826334021583a5bd1978c63840f85156ea3635f5941bfc6733aad247e5",
     "https://deno.land/x/compress@v0.4.4/tar/mod.ts": "6d9073005e678479908047cbe9e4716e484f80d1f2a1e15d3d6ac92213ffaeba",
     "https://deno.land/x/compress@v0.4.4/tgz/mod.ts": "397620ab5228b8df53a44f2ba1228bcac61e5ded44cbd89b7d4a3e2220583fae",

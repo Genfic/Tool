@@ -1,7 +1,9 @@
-import { expandGlob } from 'https://deno.land/std@0.113.0/fs/expand_glob.ts';
-import { WalkEntry } from 'https://deno.land/std@0.143.0/fs/walk.ts';
+import { expandGlob, type WalkEntry } from "@std/fs";
 
-export const generateManifest = async (glob: string, outfile: string | undefined) => {
+export const generateManifest = async (
+	glob: string,
+	outfile: string | undefined,
+) => {
 	const paths: WalkEntry[] = [];
 
 	for await (const x of expandGlob(glob)) {
@@ -11,12 +13,8 @@ export const generateManifest = async (glob: string, outfile: string | undefined
 	}
 
 	const files = paths
-		.map((ge) =>
-			ge.path
-				.split('wwwroot')
-				.at(-1)
-				?.replaceAll('\\', '/')
-		).filter((p) => p && p.length > 0);
+		.map((ge) => ge.path.split("wwwroot").at(-1)?.replaceAll("\\", "/"))
+		.filter((p) => p && p.length > 0);
 
 	const json = JSON.stringify(files, null, 4);
 

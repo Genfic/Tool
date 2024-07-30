@@ -1,8 +1,8 @@
 export const title = (str: string): string => {
 	return str
-		.split(' ')
+		.split(" ")
 		.map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-		.join(' ');
+		.join(" ");
 };
 
 export const trim = (source: string, trim: string): string => {
