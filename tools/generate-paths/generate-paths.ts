@@ -1,7 +1,14 @@
 import { ensureDir } from "@std/fs";
 import { uniq } from "@es-toolkit/es-toolkit";
 
-import type { Component, Parameter, Response as Res, Route, Schema, SwaggerResponse } from "./types.ts";
+import type {
+	Component,
+	Parameter,
+	Response as Res,
+	Route,
+	Schema,
+	SwaggerResponse,
+} from "./types.ts";
 import { typedFetchText } from "./static.ts";
 
 const replaceType = (type: string): string => {
@@ -91,9 +98,10 @@ const parseType = (schema: Schema): [string | undefined, boolean] => {
 const buildResponseType = (response: Res): [string | undefined, boolean] => {
 	if (!response.content) return [undefined, true];
 
-	const schema = "application/json" in response.content
-		? response.content["application/json"].schema
-		: response.content["application/octet-stream"].schema;
+	const schema =
+		"application/json" in response.content
+			? response.content["application/json"].schema
+			: response.content["application/octet-stream"].schema;
 
 	return parseType(schema);
 };
@@ -102,23 +110,34 @@ const buildFunction = (
 	path: string,
 	method: string,
 	meta: Route,
+	schemas: { [key: string]: Component },
 ): {
 	func: string;
 	type: string | null;
 	responseTypes: string[];
 } => {
 	const id = meta.operationId;
-	const params = meta.parameters ? `${buildParams(meta.parameters).toLowerCase()}, ` : "";
+	const params = meta.parameters
+		? `${buildParams(meta.parameters).toLowerCase()}, `
+		: "";
 	const url = path.replaceAll("{", "${").toLowerCase();
-	const query = meta.parameters ? buildQuery(meta.parameters).toLowerCase() : "";
+	const query = meta.parameters
+		? buildQuery(meta.parameters).toLowerCase()
+		: "";
 
 	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
-	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c))) ? "`" : '"';
+	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
+		? "`"
+		: '"';
 
 	const bodyRef = meta.requestBody?.content["application/json"]?.schema;
 
 	const [bodyType, _] = bodyRef ? parseType(bodyRef) : [undefined, false];
-	const body = bodyType ? `body: ${bodyType}, ` : "";
+
+	// Check if body type is an empty type
+	const isNotEmpty = bodyType && schemas[bodyType]?.properties !== undefined;
+
+	const body = bodyType && isNotEmpty ? `body: ${bodyType}, ` : "";
 
 	const responseTypes: [string | undefined, boolean][] = [];
 	for (const [_, response] of Object.entries(meta.responses)) {
@@ -136,7 +155,7 @@ const buildFunction = (
 
 	const func = `export const ${id} = ${signature} => await typedFetch<${responseType}>(${q}${url}${query}${q}, 
     '${method.toUpperCase()}', 
-    ${bodyType ? "body" : "undefined"},
+    ${bodyType && isNotEmpty ? "body" : "undefined"},
     headers,
     options,
   );`;
@@ -152,6 +171,10 @@ const buildFunction = (
 };
 
 const buildType = (name: string, component: Component): string | null => {
+	if (!component.properties) {
+		return `export interface ${name} {}`;
+	}
+
 	if (component.properties) {
 		const typeMappings: { [key: string]: string } = {
 			integer: "number",
@@ -172,7 +195,8 @@ const buildType = (name: string, component: Component): string | null => {
 			let variableType = "";
 			if (meta.type) {
 				if (meta.type === "array" && meta.items) {
-					variableType = typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
+					variableType =
+						typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
 				} else {
 					variableType = typeMappings[meta.type] ?? meta.type;
 				}
@@ -195,11 +219,9 @@ const buildType = (name: string, component: Component): string | null => {
 			return variableType;
 		};
 
-		for (
-			const [propertyName, propertyMetadata] of Object.entries(
-				component.properties,
-			)
-		) {
+		for (const [propertyName, propertyMetadata] of Object.entries(
+			component.properties,
+		)) {
 			const variableType = constructType(propertyMetadata);
 
 			type += `    ${propertyName}: ${variableType};\n`;
@@ -211,11 +233,9 @@ const buildType = (name: string, component: Component): string | null => {
 	}
 
 	if (component.enum) {
-		return `export type ${name} = ${
-			[...component.enum.values()]
-				.map((e) => `"${e}"`)
-				.join(" | ")
-		};`;
+		return `export type ${name} = ${[...component.enum.values()]
+			.map((e) => `"${e}"`)
+			.join(" | ")};`;
 	}
 
 	return null;
@@ -240,6 +260,7 @@ const generate = async (
 				k,
 				pathKey,
 				pathVal as Route,
+				data.components.schemas,
 			);
 			paths.push(func);
 			if (type) {

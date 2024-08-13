@@ -3,7 +3,7 @@ export interface SwaggerResponse {
 	openapi: string;
 	info: { title: string; version: string };
 	paths: Map<string, Path>;
-	components: { schemas: Map<string, Component> };
+	components: { schemas: { [key: string]: Component } };
 }
 
 export type Path = Map<
@@ -44,7 +44,7 @@ export interface RequestBody {
 
 export interface Component {
 	enum: Map<number, string>;
-	properties: Map<string, Type>;
+	properties: Map<string, Type> | undefined;
 }
 
 export interface Type {
