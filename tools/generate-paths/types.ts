@@ -43,6 +43,7 @@ export interface RequestBody {
 }
 
 export interface Component {
+	type: "object" | "string";
 	enum: Map<number, string>;
 	properties: Map<string, Type> | undefined;
 }

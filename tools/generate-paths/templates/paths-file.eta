@@ -1,0 +1,11 @@
+import type {
+<% it.typeImports.forEach((type) => { %>
+	<%= type %>,
+<% }) %>
+} from './types-<%= it.key %>';
+import { typedFetch } from './typed-fetch';
+
+<% it.paths.forEach((path) => { %>
+	<%_ = path %>
+
+<% }) %>

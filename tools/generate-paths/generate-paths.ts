@@ -1,5 +1,7 @@
 import { ensureDir } from "@std/fs";
 import { uniq } from "@es-toolkit/es-toolkit";
+import { Eta } from "@eta-dev/eta";
+import * as path from "@std/path";
 
 import type {
 	Component,
@@ -11,6 +13,17 @@ import type {
 } from "./types.ts";
 import { typedFetchText } from "./static.ts";
 
+const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
+const eta = new Eta({
+	views: path.join(__dirname, "templates"),
+	autoEscape: false,
+	autoFilter: true,
+	filterFunction: (value): string => {
+		if (value === undefined || value === null) return "";
+		return value.toString();
+	},
+});
+
 const replaceType = (type: string): string => {
 	return (
 		{
@@ -20,20 +33,20 @@ const replaceType = (type: string): string => {
 			float: "number",
 			bool: "boolean",
 			string: "string",
-		}[type] ?? "any"
+		}[type] ?? "unknown"
 	);
 };
 
-const buildParams = (parameters: Map<number, Parameter>): string => {
+const buildParams = (parameters: Map<number, Parameter>): string[] => {
 	const params = [];
 	for (const [_, param] of Object.entries(parameters)) {
 		if (param.in !== "path" && param.in !== "query") continue;
 		let p = param.name;
 		p += ": ";
 		p += replaceType(param.schema.type);
-		params.push(p);
+		params.push(p.toLowerCase());
 	}
-	return params.join(", ");
+	return params;
 };
 
 const buildQuery = (parameters: Map<number, Parameter>): string => {
@@ -117,9 +130,7 @@ const buildFunction = (
 	responseTypes: string[];
 } => {
 	const id = meta.operationId;
-	const params = meta.parameters
-		? `${buildParams(meta.parameters).toLowerCase()}, `
-		: "";
+	const params = meta.parameters ? buildParams(meta.parameters) : null;
 	const url = path.replaceAll("{", "${").toLowerCase();
 	const query = meta.parameters
 		? buildQuery(meta.parameters).toLowerCase()
@@ -137,8 +148,6 @@ const buildFunction = (
 	// Check if body type is an empty type
 	const isNotEmpty = bodyType && schemas[bodyType]?.properties !== undefined;
 
-	const body = bodyType && isNotEmpty ? `body: ${bodyType}, ` : "";
-
 	const responseTypes: [string | undefined, boolean][] = [];
 	for (const [_, response] of Object.entries(meta.responses)) {
 		const t = buildResponseType(response);
@@ -151,14 +160,17 @@ const buildFunction = (
 		? "void"
 		: uniq(responseTypes.map(([t, _]) => t).filter((t) => !!t)).join("|");
 
-	const signature = `async (${body}${params}headers?: HeadersInit, options?: RequestInit)`;
-
-	const func = `export const ${id} = ${signature} => await typedFetch<${responseType}>(${q}${url}${query}${q}, 
-    '${method.toUpperCase()}', 
-    ${bodyType && isNotEmpty ? "body" : "undefined"},
-    headers,
-    options,
-  );`;
+	const func = eta.render("./function", {
+		id,
+		params,
+		responseType,
+		q,
+		url,
+		query,
+		method,
+		bodyType,
+		isNotEmpty,
+	});
 
 	return {
 		func,
@@ -171,8 +183,10 @@ const buildFunction = (
 };
 
 const buildType = (name: string, component: Component): string | null => {
-	if (!component.properties) {
-		return `export interface ${name} {}`;
+	if (component.enum) {
+		return `export type ${name} = ${[...component.enum.values()]
+			.map((e) => `"${e}"`)
+			.join(" | ")};`;
 	}
 
 	if (component.properties) {
@@ -181,8 +195,6 @@ const buildType = (name: string, component: Component): string | null => {
 			undefined: "object",
 			array: "object[]",
 		};
-
-		let type = `export interface ${name} {\n`;
 
 		type meta = {
 			type: string;
@@ -219,26 +231,21 @@ const buildType = (name: string, component: Component): string | null => {
 			return variableType;
 		};
 
+		const props: { name: string; type: string | null }[] = [];
 		for (const [propertyName, propertyMetadata] of Object.entries(
 			component.properties,
 		)) {
 			const variableType = constructType(propertyMetadata);
-
-			type += `    ${propertyName}: ${variableType};\n`;
+			props.push({ name: propertyName, type: variableType });
 		}
 
-		type += "}";
+		const type = eta.render("./type", { name, props });
 
 		return type;
 	}
 
-	if (component.enum) {
-		return `export type ${name} = ${[...component.enum.values()]
-			.map((e) => `"${e}"`)
-			.join(" | ")};`;
-	}
-
-	return null;
+	console.log(name, component);
+	return `export type ${name} = Record<string, never>;`;
 };
 
 const generate = async (
@@ -279,7 +286,13 @@ const generate = async (
 		types.push(type);
 	}
 
-	return { paths, types, typeImports: uniq(typeImports) };
+	return {
+		paths: paths.toSorted(),
+		types: types.toSorted(),
+		typeImports: uniq(typeImports)
+			.filter((ti) => !ti.endsWith("[]"))
+			.toSorted(),
+	};
 };
 
 export const generatePaths = async (
@@ -291,11 +304,11 @@ export const generatePaths = async (
 		console.log(`Generating paths for: ${key}`);
 		const { paths, types, typeImports } = await generate(val);
 
-		const pathsFile = `import type {
-\t${typeImports.filter((ti) => !ti.endsWith("[]")).join(",\n\t")}
-} from './types-${key}';
-import { typedFetch } from './typed-fetch';\n
-${paths.join("\n\n")}`;
+		const pathsFile = await eta.renderAsync("./paths-file", {
+			key,
+			typeImports,
+			paths,
+		});
 
 		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
 		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join("\n\n"));

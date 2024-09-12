@@ -4,6 +4,7 @@
     "specifiers": {
       "jsr:@es-toolkit/es-toolkit@^1.13.1": "jsr:@es-toolkit/es-toolkit@1.13.1",
       "jsr:@es-toolkit/es-toolkit@^1.8.0": "jsr:@es-toolkit/es-toolkit@1.8.0",
+      "jsr:@eta-dev/eta@^3.5.0": "jsr:@eta-dev/eta@3.5.0",
       "jsr:@std/cli@^1.0.1": "jsr:@std/cli@1.0.1",
       "jsr:@std/fmt@^0.225.6": "jsr:@std/fmt@0.225.6",
       "jsr:@std/fs@^1.0.0": "jsr:@std/fs@1.0.0",
@@ -15,6 +16,9 @@
       },
       "@es-toolkit/es-toolkit@1.8.0": {
         "integrity": "53dfb8ed4ad423221e3afabf9b99b796a0635df8e84491c0d3ff80bfe9b05ecf"
+      },
+      "@eta-dev/eta@3.5.0": {
+        "integrity": "6b70827efc14c7cbf08498ac7a922ecab003641caf3852a6cb5b1b12ee58fb37"
       },
       "@std/cli@1.0.1": {
         "integrity": "d0661fba13b30e3c0121646589fa9beeeabe92482c6b04679ea0e7ec683d97f2"
@@ -218,6 +222,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@es-toolkit/es-toolkit@^1.13.1",
+      "jsr:@eta-dev/eta@^3.5.0",
       "jsr:@std/cli@^1.0.1",
       "jsr:@std/fmt@^0.225.6",
       "jsr:@std/fs@^1.0.0",

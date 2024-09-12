@@ -1,0 +1,8 @@
+<% const body = it.bodyType && it.isNotEmpty ? `body: ${it.bodyType}, ` : null %>
+
+export const <%= it.id %> = async (<%_= body _%><%_= it.params?.join(', ') _%><%= it.params && ', ' %>headers?: HeadersInit, options?: RequestInit) => await typedFetch<<%= it.responseType%>>(<%= it.q %><%= it.url %><%= it.query %><%= it.q %>,
+	"<%= it.method.toUpperCase() %>",
+	<%= it.bodyType && it.isNotEmpty ? 'body' : 'undefined' %>,
+	headers,
+	options,
+);

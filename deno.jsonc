@@ -10,6 +10,7 @@
   },
   "imports": {
     "@es-toolkit/es-toolkit": "jsr:@es-toolkit/es-toolkit@^1.13.1",
+    "@eta-dev/eta": "jsr:@eta-dev/eta@^3.5.0",
     "@std/cli": "jsr:@std/cli@^1.0.1",
     "@std/fmt": "jsr:@std/fmt@^0.225.6",
     "@std/fs": "jsr:@std/fs@^1.0.0",
