@@ -13,7 +13,5 @@ export const trim = (source: string, trim: string): string => {
 
 	while (end > start && source[end - 1] === trim) --end;
 
-	return start > 0 || end < source.length
-		? source.substring(start, end)
-		: source;
+	return start > 0 || end < source.length ? source.substring(start, end) : source;
 };

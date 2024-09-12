@@ -3,14 +3,7 @@ import { uniq } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
 
-import type {
-	Component,
-	Parameter,
-	Response as Res,
-	Route,
-	Schema,
-	SwaggerResponse,
-} from "./types.ts";
+import type { Component, Parameter, Response as Res, Route, Schema, SwaggerResponse } from "./types.ts";
 import { typedFetchText } from "./static.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
@@ -111,10 +104,9 @@ const parseType = (schema: Schema): [string | undefined, boolean] => {
 const buildResponseType = (response: Res): [string | undefined, boolean] => {
 	if (!response.content) return [undefined, true];
 
-	const schema =
-		"application/json" in response.content
-			? response.content["application/json"].schema
-			: response.content["application/octet-stream"].schema;
+	const schema = "application/json" in response.content
+		? response.content["application/json"].schema
+		: response.content["application/octet-stream"].schema;
 
 	return parseType(schema);
 };
@@ -132,14 +124,10 @@ const buildFunction = (
 	const id = meta.operationId;
 	const params = meta.parameters ? buildParams(meta.parameters) : null;
 	const url = path.replaceAll("{", "${").toLowerCase();
-	const query = meta.parameters
-		? buildQuery(meta.parameters).toLowerCase()
-		: "";
+	const query = meta.parameters ? buildQuery(meta.parameters).toLowerCase() : "";
 
 	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
-	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
-		? "`"
-		: '"';
+	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c))) ? "`" : '"';
 
 	const bodyRef = meta.requestBody?.content["application/json"]?.schema;
 
@@ -184,9 +172,11 @@ const buildFunction = (
 
 const buildType = (name: string, component: Component): string | null => {
 	if (component.enum) {
-		return `export type ${name} = ${[...component.enum.values()]
-			.map((e) => `"${e}"`)
-			.join(" | ")};`;
+		return `export type ${name} = ${
+			[...component.enum.values()]
+				.map((e) => `"${e}"`)
+				.join(" | ")
+		};`;
 	}
 
 	if (component.properties) {
@@ -207,8 +197,7 @@ const buildType = (name: string, component: Component): string | null => {
 			let variableType = "";
 			if (meta.type) {
 				if (meta.type === "array" && meta.items) {
-					variableType =
-						typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
+					variableType = typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
 				} else {
 					variableType = typeMappings[meta.type] ?? meta.type;
 				}
@@ -232,9 +221,11 @@ const buildType = (name: string, component: Component): string | null => {
 		};
 
 		const props: { name: string; type: string | null }[] = [];
-		for (const [propertyName, propertyMetadata] of Object.entries(
-			component.properties,
-		)) {
+		for (
+			const [propertyName, propertyMetadata] of Object.entries(
+				component.properties,
+			)
+		) {
 			const variableType = constructType(propertyMetadata);
 			props.push({ name: propertyName, type: variableType });
 		}
