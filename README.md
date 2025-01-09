@@ -2,7 +2,7 @@
 
 ## Installation
 
-`vr install` to install the tool locally
+`task install` to install the tool locally (requires https://taskfile.dev/)
 
 ## Tools
 

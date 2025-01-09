@@ -4,6 +4,7 @@ import { generateImports } from "./tools/generate-imports/index.ts";
 import { generatePaths } from "./tools/generate-paths/generate-paths.ts";
 import { generatePreloads } from "./tools/generate-preloads/index.ts";
 import { generateManifest } from "./tools/generate-js-manifest/index.ts";
+import { addIcons } from "./tools/icons/icons.ts";
 
 const args = parseArgs(Deno.args, { collect: ["path"] });
 
@@ -27,6 +28,8 @@ const run = async (): Promise<void> => {
 				params[0].toString(),
 				params.at(1)?.toString(),
 			);
+		case "icons":
+			return await addIcons(params[0].toString());
 		case "demo":
 			return await demo({ command, params, args });
 		default:

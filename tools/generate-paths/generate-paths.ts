@@ -67,6 +67,9 @@ const parseType = (schema: Schema): [string | undefined, boolean] => {
 	if ("$ref" in schema) {
 		return [extract(schema.$ref), false];
 	}
+	if ("format" in schema && schema.format === "binary") {
+		return ["Blob", true];
+	}
 	if (
 		"type" in schema &&
 		schema.type === "array" &&
@@ -233,6 +236,10 @@ const buildType = (name: string, component: Component): string | null => {
 		const type = eta.render("./type", { name, props });
 
 		return type;
+	}
+
+	if (component.format === "binary") {
+		return `export type ${name} = Blob;`;
 	}
 
 	console.log(name, component);
