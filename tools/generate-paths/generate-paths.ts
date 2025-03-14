@@ -320,12 +320,12 @@ const generate = async (
 
 export const generatePaths = async (
 	outDir: string,
-	paths: { [key: string]: string },
+	paths: { key: string; value: string }[],
 ) => {
 	await ensureDir(outDir);
-	for (const [key, val] of Object.entries(paths)) {
+	for (const { key, value } of paths) {
 		console.log(`Generating paths for: ${key}`);
-		const { paths, types, typeImports } = await generate(val);
+		const { paths, types, typeImports } = await generate(value);
 
 		const pathsFile = await eta.renderAsync("./paths-file", {
 			key,

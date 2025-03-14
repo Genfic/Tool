@@ -1,44 +1,54 @@
-import { parseArgs } from "@std/cli";
+import { Command } from "@cliffy/command";
 import { bundlesize } from "./tools/bundlesize/index.ts";
 import { generateImports } from "./tools/generate-imports/index.ts";
 import { generatePaths } from "./tools/generate-paths/generate-paths.ts";
 import { generatePreloads } from "./tools/generate-preloads/index.ts";
 import { generateManifest } from "./tools/generate-js-manifest/index.ts";
-import { addIcons } from "./tools/icons/icons.ts";
 
-const args = parseArgs(Deno.args, { collect: ["path"] });
-
-const [command, ...params] = args._;
-
-const run = async (): Promise<void> => {
-	switch (command) {
-		case "bundlesize":
-			return await bundlesize(params.map((x) => x.toString()));
-		case "generate-imports":
-			return await generateImports(params[0].toString(), params[1].toString());
-		case "generate-preloads":
-			return await generatePreloads(params[0].toString(), params[1].toString());
-		case "generate-paths":
-			return await generatePaths(
-				params[0].toString(),
-				args.path as unknown as { [key: string]: string },
+await new Command()
+	// Bundlesize
+	.command("bundlesize")
+	.arguments("<...paths:string>")
+	.description("Calculate total bundle size")
+	.action(async (_: unknown, ...paths: string[]) => {
+		await bundlesize(paths);
+	})
+	// Generate imports
+	.command("generate-imports")
+	.arguments("<path:string> <dest:string>")
+	.description("Generate imports for fonts")
+	.action(async (path: string, dest: string) => {
+		await generateImports(path, dest);
+	})
+	// Generate preloads
+	.command("generate-preloads")
+	.arguments("<path:string> <dest:string>")
+	.description("Generate preloads for fonts")
+	.action(async (path: string, dest: string) => {
+		await generatePreloads(path, dest);
+	})
+	// Generate paths
+	.command("generate-paths")
+	.arguments("<out:string>")
+	.option("--path.* [string]", "Path to the OpenAPI file", { collect: true })
+	.description("Generate paths")
+	.action(
+		async ({ path }: { path: { [key: string]: string[] } }, out: string) => {
+			await generatePaths(
+				out,
+				Object.entries(path).flatMap(([k, v]) =>
+					v.map((x) => ({ key: k, value: x })),
+				),
 			);
-		case "generate-js-manifest":
-			return await generateManifest(
-				params[0].toString(),
-				params.at(1)?.toString(),
-			);
-		case "icons":
-			return await addIcons(params[0].toString());
-		case "demo":
-			return await demo({ command, params, args });
-		default:
-			console.log(`[${command}] is not a correct option`);
-	}
-};
-await run();
+		},
+	)
+	// Generate manifest
+	.command("generate-js-manifest")
+	.arguments("<out:string> [name:string]")
+	.description("Generate manifest")
+	.action(async (out: string, name: string) => {
+		await generateManifest(out, name);
+	})
+	.parse(Deno.args);
 
-async function demo(obj: object) {
-	await Promise.resolve();
-	console.info(JSON.stringify(obj));
-}
+Deno.exit(0);
