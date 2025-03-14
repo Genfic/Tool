@@ -1,4 +1,4 @@
-export interface <%= it.name %> {
+{
 <% it.props.forEach((p) => { %>
 	<%= p.name %>: <%= p.type ?? 'unknown' %>;
 <%})%>

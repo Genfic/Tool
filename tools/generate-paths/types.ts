@@ -2,11 +2,12 @@ export interface SwaggerResponse {
 	"x-generator": string;
 	openapi: string;
 	info: { title: string; version: string };
-	paths: Map<string, Path>;
-	components: { schemas: { [key: string]: Component } };
+	servers: { url: string; description: string }[];
+	paths: Record<string, Path>;
+	components: { schemas: { [key: string]: Type } };
 }
 
-export type Path = Map<
+export type Path = Record<
 	"get" | "put" | "post" | "delete" | "head" | "options",
 	Route
 >;
@@ -14,45 +15,41 @@ export type Path = Map<
 export interface Route {
 	tags: string[];
 	operationId: string;
-	parameters?: Map<number, Parameter>;
+	parameters?: Parameter[];
 	requestBody: RequestBody | null;
-	responses: Map<string, Response>;
+	responses: Record<string, Response>;
 }
 
 export interface Response {
 	description: string;
-	content:
-		| { "application/json": { schema: Schema } }
-		| { "application/octet-stream": { schema: Schema } };
+	content: Content;
 }
 
-export type Schema =
-	| { $ref: string }
-	| { type: string; nullable: boolean }
-	| { type: string; items: { $ref: string } | { type: string } };
+export type ContentType = "application/json" | "application/octet-stream";
+
+export type Content = {
+	[K in ContentType]: { [P in K]: { schema: Type } };
+}[ContentType];
 
 export interface Parameter {
 	name: string;
 	in: string;
-	schema: { type: string; nullable: boolean };
+	required: boolean;
+	schema: Type;
 }
 
 export interface RequestBody {
 	"x-name": string;
-	content: { "application/json": { schema: { $ref: string } } };
-}
-
-export interface Component {
-	type: "object" | "string";
-	enum: Map<number, string>;
-	properties: Map<string, Type> | undefined;
-	format: "binary" | undefined;
+	content: Content;
 }
 
 export interface Type {
 	type: string;
-	format: string | undefined;
-	nullable: boolean | undefined;
-	items: { type: string };
-	$ref: string;
+	enum?: string[] | undefined;
+	format?: string | undefined;
+	nullable?: boolean | undefined;
+	properties?: Record<string, Type> | undefined;
+	items?: Type | undefined;
+	oneOf?: Type[] | undefined;
+	$ref?: string | undefined;
 }

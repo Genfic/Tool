@@ -2,16 +2,9 @@ version: "3"
 
 tasks:
   start: ./index.ts
-  release: deno compile -A --output ./bin/ogma-tool index.ts
-  install: deno install -f -A -g -n ogma-tool -c ./deno.jsonc index.ts
-  create-schema:
-    env:
-      DENO_TLS_CA_STORE: system
-    cmds:
-      - deno run -A npm:openapi-typescript "https://localhost:5001/openapi/public.json" -o ./types/openapi/public.d.ts
-      - deno run -A npm:openapi-typescript "https://localhost:5001/openapi/internal.json" -o ./types/openapi/internal.d.ts
+  release: deno compile --allow-all --output ./bin/ogma-tool index.ts
+  install: deno install --force --allow-all --global --name ogma-tool --config ./deno.jsonc index.ts
   bundlesize: deno run --allow-read ./index.ts bundlesize "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
   generate-imports: deno run --allow-read ./index.ts generate-imports "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
   generate-preloads: deno run --allow-read ./index.ts generate-preloads "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
   generate-paths: deno run --allow-net --unsafely-ignore-certificate-errors=localhost --allow-read --allow-write ./index.ts generate-paths "out" --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json"
-  generate-js-manifest: deno run --allow-read --allow-write ./index.ts generate-js-manifest "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js"

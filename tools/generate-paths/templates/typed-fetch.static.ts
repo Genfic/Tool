@@ -1,4 +1,3 @@
-export const typedFetchText = /* lang=ts */ `
 interface TypedResponse<T> {
 	ok: boolean;
 	status: number;
@@ -41,4 +40,3 @@ export async function typedFetch<TOut>(
 		data: data as TOut,
 	};
 }
-`.trim();

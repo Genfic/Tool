@@ -2,22 +2,23 @@ import { ensureDir } from "@std/fs";
 import { uniq } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
+import { match, P } from "@dewars/pattern";
+import { camelCase } from "change-case";
 
 import type {
-	Component,
 	Parameter,
 	Response as Res,
 	Route,
-	Schema,
 	SwaggerResponse,
+	Type,
 } from "./types.ts";
-import { typedFetchText } from "./static.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const eta = new Eta({
 	views: path.join(__dirname, "templates"),
 	autoEscape: false,
 	autoFilter: true,
+	cache: true,
 	filterFunction: (value): string => {
 		if (value === undefined || value === null) return "";
 		return value.toString();
@@ -37,103 +38,104 @@ const replaceType = (type: string): string => {
 	);
 };
 
-const buildParams = (parameters: Map<number, Parameter>): string[] => {
+const buildParams = (parameters: Parameter[]): string[] => {
 	const params = [];
-	for (const [_, param] of Object.entries(parameters)) {
+	for (const param of parameters) {
 		if (param.in !== "path" && param.in !== "query") continue;
-		let p = param.name;
-		p += ": ";
-		p += replaceType(param.schema.type);
-		params.push(p.toLowerCase());
+		const p = `${camelCase(param.name)}: ${replaceType(param.schema.type)}`;
+		params.push(p);
 	}
 	return params;
 };
 
-const buildQuery = (parameters: Map<number, Parameter>): string => {
+const buildQuery = (parameters: Parameter[]): string => {
 	const params = [];
-	for (const [_, param] of Object.entries(parameters)) {
+	for (const param of parameters) {
 		if (param.in !== "query") continue;
-		let p = param.name;
+		let p = camelCase(param.name);
 		p += "=${";
-		p += param.name;
+		p += camelCase(param.name);
 		p += "}";
 		params.push(p);
 	}
 	return params.length > 0 ? `?${params.join("&")}` : "";
 };
 
-const parseType = (schema: Schema): [string | undefined, boolean] => {
+const parseType = (
+	schema: Type,
+): [typeString: string | undefined, skipImport: boolean] => {
 	const typeMappings: { [key: string]: string } = {
 		integer: "number",
 		undefined: "object",
 		array: "object[]",
 	};
 
-	const extract = (ref: string) => ref.split("/").at(-1);
+	const extract = (ref: string | undefined) => ref?.split("/").at(-1);
 
-	if ("$ref" in schema) {
-		return [extract(schema.$ref), false];
-	}
-	if ("format" in schema && schema.format === "binary") {
-		return ["Blob", true];
-	}
-	if (
-		"type" in schema &&
-		schema.type === "array" &&
-		"items" in schema &&
-		schema.items
-	) {
-		if ("$ref" in schema.items && schema.items.$ref) {
-			return [`${extract(schema.items.$ref)}[]`, false];
-		}
-		if ("type" in schema.items && schema.items.type) {
-			return [
-				`${typeMappings[schema.items.type] ?? schema.items.type}[]`,
-				true,
-			];
-		}
-	}
-	if (
-		"type" in schema &&
-		schema.type &&
-		"nullable" in schema &&
-		schema.nullable
-	) {
-		return [
-			`${typeMappings[schema.type]}${schema.nullable ? " | null" : ""}`,
+	const ret = match<
+		Type,
+		[typeString: string | undefined, skipImport: boolean]
+	>(schema)
+		.with({ $ref: P.nonNullable }, (s) => [extract(s.$ref), false])
+		.with({ format: "binary" }, () => ["Blob", true])
+		.with({ items: P.nonNullable }, (s) => {
+			const [t, skip] = parseType(s.items);
+			return [`${t}[]`, skip];
+		})
+		.with({ enum: P.nonNullable }, (s) => [
+			s.enum.map((e) => `"${e}"`).join(" | "),
 			true,
-		];
-	}
-	if (
-		"type" in schema &&
-		schema.type === "object" &&
-		"properties" in schema &&
-		schema.properties
-	) {
-		const props = [];
-		for (const [key, value] of Object.entries(schema.properties)) {
-			const [parsed, _] = parseType(value);
-			if (!parsed) {
-				continue;
+		])
+		.with({ oneOf: P.nonNullable }, (s) => {
+			const subtypes = [];
+			for (const t of s.oneOf) {
+				const [parsed, _] = parseType(t);
+				if (!parsed) {
+					continue;
+				}
+				subtypes.push(parsed);
 			}
-			props.push(`${key}: ${parsed}`);
-		}
-		return [`{ ${props.join(", ")} }`, true];
-	}
-	if ("type" in schema && schema.type) {
-		return [typeMappings[schema.type] ?? schema.type, true];
+			return [subtypes.join(" | "), true];
+		})
+		.with({ properties: P.nonNullable }, (s) => {
+			const props: { name: string; type: string }[] = [];
+			for (const [key, value] of Object.entries(s.properties)) {
+				const [parsed, _] = parseType(value);
+				if (!parsed) {
+					continue;
+				}
+				props.push({ name: key, type: parsed });
+			}
+			return [eta.render("type", { props }), true];
+		})
+		.with({ type: P.nonNullable }, (s) => [
+			typeMappings[s.type] ?? s.type,
+			true,
+		])
+		.otherwise(() => [undefined, true]);
+
+	if (schema.nullable) {
+		ret[0] += " | null";
 	}
 
-	return [undefined, true];
+	return ret;
 };
 
 const buildResponseType = (response: Res): [string | undefined, boolean] => {
-	if (!response.content) return [undefined, true];
+	if (!response.content) {
+		return [undefined, true];
+	}
 
-	const schema =
-		"application/json" in response.content
-			? response.content["application/json"].schema
-			: response.content["application/octet-stream"].schema;
+	const schema = match(response.content)
+		.with(
+			{ "application/json": P.nonNullable },
+			(s) => s["application/json"].schema,
+		)
+		.with(
+			{ "application/octet-stream": P.nonNullable },
+			(s) => s["application/octet-stream"].schema,
+		)
+		.exhaustive();
 
 	return parseType(schema);
 };
@@ -142,7 +144,7 @@ const buildFunction = (
 	path: string,
 	method: string,
 	meta: Route,
-	schemas: { [key: string]: Component },
+	schemas: { [key: string]: Type },
 ): {
 	func: string;
 	type: string | null;
@@ -150,17 +152,20 @@ const buildFunction = (
 } => {
 	const id = meta.operationId;
 	const params = meta.parameters ? buildParams(meta.parameters) : null;
-	const url = path.replaceAll("{", "${").toLowerCase();
-	const query = meta.parameters
-		? buildQuery(meta.parameters).toLowerCase()
-		: "";
+	const url = path
+		.replaceAll(/\{(.+)\}/gi, (c) => `{${camelCase(c)}}`)
+		.replaceAll("{", "${");
+	const query = meta.parameters ? buildQuery(meta.parameters) : "";
 
 	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
 	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
 		? "`"
 		: '"';
 
-	const bodyRef = meta.requestBody?.content["application/json"]?.schema;
+	const bodyRef =
+		meta.requestBody &&
+		"application/json" in meta.requestBody.content &&
+		meta.requestBody.content["application/json"].schema;
 
 	const [bodyType, _] = bodyRef ? parseType(bodyRef) : [undefined, false];
 
@@ -201,73 +206,12 @@ const buildFunction = (
 	};
 };
 
-const buildType = (name: string, component: Component): string | null => {
-	if (component.enum) {
-		return `export type ${name} = ${[...component.enum.values()]
-			.map((e) => `"${e}"`)
-			.join(" | ")};`;
+const buildType = (name: string, component: Type): string | null => {
+	const [t, _] = parseType(component);
+	if (t) {
+		return `export type ${name} = ${t};`;
 	}
 
-	if (component.properties) {
-		const typeMappings: { [key: string]: string } = {
-			integer: "number",
-			undefined: "object",
-			array: "object[]",
-		};
-
-		type meta = {
-			type: string;
-			nullable: boolean;
-			items: meta;
-			$ref: string;
-			oneOf: meta[];
-		};
-		const constructType = (meta: meta): string | null => {
-			let variableType = "";
-			if (meta.type) {
-				if (meta.type === "array" && meta.items) {
-					variableType =
-						typeMappings[meta.items.type] ?? `${meta.items.type}[]`;
-				} else {
-					variableType = typeMappings[meta.type] ?? meta.type;
-				}
-			} else if (meta.$ref) {
-				variableType = meta.$ref.split("/").at(-1) ?? "unknown";
-			} else if (meta.oneOf) {
-				let subtype = "";
-				for (const t of meta.oneOf) {
-					subtype += constructType(t);
-				}
-				variableType = subtype;
-			} else {
-				return null;
-			}
-
-			if (meta.nullable) {
-				variableType += " | null";
-			}
-
-			return variableType;
-		};
-
-		const props: { name: string; type: string | null }[] = [];
-		for (const [propertyName, propertyMetadata] of Object.entries(
-			component.properties,
-		)) {
-			const variableType = constructType(propertyMetadata);
-			props.push({ name: propertyName, type: variableType });
-		}
-
-		const type = eta.render("./type", { name, props });
-
-		return type;
-	}
-
-	if (component.format === "binary") {
-		return `export type ${name} = Blob;`;
-	}
-
-	console.log(name, component);
 	return `export type ${name} = Record<string, never>;`;
 };
 
@@ -318,12 +262,18 @@ const generate = async (
 	};
 };
 
+const typedFetch = await Deno.readTextFile(
+	path.join(__dirname, "templates/typed-fetch.static.ts"),
+);
+
 export const generatePaths = async (
 	outDir: string,
 	paths: { key: string; value: string }[],
 ) => {
 	await ensureDir(outDir);
 	for (const { key, value } of paths) {
+		const start = Temporal.Now.instant();
+
 		console.log(`Generating paths for: ${key}`);
 		const { paths, types, typeImports } = await generate(value);
 
@@ -335,7 +285,12 @@ export const generatePaths = async (
 
 		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
 		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join("\n\n"));
+
+		const end = Temporal.Now.instant();
+		console.log(
+			`Generated paths for: ${key} in ${end.since(start).milliseconds}ms`,
+		);
 	}
 
-	await Deno.writeTextFile(`${outDir}/typed-fetch.ts`, typedFetchText);
+	await Deno.writeTextFile(`${outDir}/typed-fetch.ts`, typedFetch);
 };
