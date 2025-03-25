@@ -6,18 +6,18 @@
 
 ## Tools
 
-### Bundlesize
+### Bundle size
 
 Get the size of all bundled Javascript, including after compression with GZip and Brotli
 
 ```sh
-deno run --allow-read ./index.ts bundlesize <glob>
+deno run --allow-read ./index.ts bundle-size <glob>
 ```
 
 for example
 
 ```sh
-deno run --allow-read ./index.ts bundlesize "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\{dist,bundle}/**/*.js"
+deno run --allow-read ./index.ts bundle-size "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\{dist,bundle}/**/*.js"
 ```
 
 ### Generate imports
@@ -34,7 +34,7 @@ for example
 deno run --allow-read ./index.ts generate-imports "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
 ```
 
-### Genrate preloads
+### Generate preloads
 
 Generates `<link>` preloads to speed up the loading of font files
 

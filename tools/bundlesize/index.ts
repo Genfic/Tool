@@ -3,10 +3,10 @@ import { format as bytes } from "@std/fmt/bytes";
 import { expandGlobSync, type WalkEntry } from "@std/fs";
 import { Table } from "../../helpers/table.ts";
 import type { FileData, PathData } from "./types.ts";
-import { compress as compressBrotli } from "https://deno.land/x/brotli@v0.1.4/mod.ts";
-import { gzip as compressGzip } from "https://deno.land/x/compress@v0.4.4/mod.ts";
+import { brotliCompressSync, gzipSync } from "node:zlib";
+import { compress as compressZstd } from "@yu7400ki/zstd-wasm";
 
-export const bundlesize = async (paths: string[]) => {
+export const bundleSize = async (paths: string[]) => {
 	const p: { [key: string]: PathData[] } = paths
 		.flatMap((p) => [...expandGlobSync(p)])
 		.map(
@@ -29,6 +29,7 @@ export const bundlesize = async (paths: string[]) => {
 		plain: 0,
 		brotli: 0,
 		gzip: 0,
+		zstd: 0,
 	};
 
 	for (const path in p) {
@@ -53,11 +54,12 @@ export const bundlesize = async (paths: string[]) => {
 		);
 
 		const totalSize = plain.map((f) => f.size).reduce((l, c) => l + c);
-		const { brotli, gzip } = await getCompressedSizes(files);
+		const { brotli, gzip, zstd } = await getCompressedSizes(files);
 
 		sums.plain += totalSize;
 		sums.brotli += brotli;
 		sums.gzip += gzip;
+		sums.zstd += zstd;
 
 		table.footer([
 			["Total size", bytes(totalSize)],
@@ -66,12 +68,13 @@ export const bundlesize = async (paths: string[]) => {
 				"Brotli",
 				`${bytes(brotli)} (${((brotli / totalSize) * 100).toFixed(2)}%)`,
 			],
+			["Zstd", `${bytes(zstd)} (${((zstd / totalSize) * 100).toFixed(2)}%)`],
 		]);
 		table.render();
 	}
 
 	console.log(
-		`Total JS size: ${bytes(sums.plain)} (${bytes(sums.gzip)} gzipped, ${bytes(sums.brotli)} brotli)`,
+		`Total JS size: ${bytes(sums.plain)} (${bytes(sums.gzip)} gzipped, ${bytes(sums.brotli)} brotli, ${bytes(sums.zstd)} zstd)`,
 	);
 };
 
@@ -82,7 +85,8 @@ const getCompressedSizes = async (files: PathData[]) => {
 	}
 	const content = new TextEncoder().encode(f);
 	return {
-		brotli: compressBrotli(content).length,
-		gzip: compressGzip(content).length,
+		brotli: brotliCompressSync(content).length,
+		gzip: gzipSync(content).length,
+		zstd: (await compressZstd(content)).length,
 	};
 };

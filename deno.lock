@@ -5,27 +5,19 @@
     "jsr:@cliffy/flags@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/internal@1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/table@1.0.0-rc.7": "1.0.0-rc.7",
-    "jsr:@deno-library/compress@~0.5.5": "0.5.5",
-    "jsr:@deno-library/crc32@1.0.2": "1.0.2",
     "jsr:@dewars/pattern@^5.1.2": "5.1.2",
     "jsr:@es-toolkit/es-toolkit@^1.13.1": "1.13.1",
     "jsr:@es-toolkit/es-toolkit@^1.8.0": "1.8.0",
     "jsr:@eta-dev/eta@^3.5.0": "3.5.0",
-    "jsr:@std/bytes@^1.0.2": "1.0.5",
     "jsr:@std/cli@^1.0.1": "1.0.1",
     "jsr:@std/fmt@~0.225.6": "0.225.6",
     "jsr:@std/fmt@~1.0.2": "1.0.3",
     "jsr:@std/fs@1": "1.0.0",
-    "jsr:@std/fs@1.0.5": "1.0.5",
-    "jsr:@std/io@0.225.0": "0.225.0",
-    "jsr:@std/path@1.0.8": "1.0.8",
     "jsr:@std/path@^1.0.2": "1.0.2",
-    "jsr:@std/path@^1.0.7": "1.0.8",
-    "jsr:@std/streams@^1.0.7": "1.0.9",
-    "jsr:@std/tar@0.1.3": "0.1.3",
     "jsr:@std/text@~1.0.7": "1.0.11",
-    "jsr:@zip-js/zip-js@2.7.53": "2.7.53",
-    "npm:arktype@^2.1.9": "2.1.9",
+    "jsr:@yu7400ki/zstd-wasm@0.1": "0.1.0",
+    "npm:@types/node@*": "22.12.0",
+    "npm:@types/node@^22.13.13": "22.13.13",
     "npm:change-case@^5.4.4": "5.4.4",
     "npm:openapi-typescript@*": "7.4.3_typescript@5.7.2"
   },
@@ -55,20 +47,6 @@
         "jsr:@std/fmt@~1.0.2"
       ]
     },
-    "@deno-library/compress@0.5.5": {
-      "integrity": "18b651a33eac87d96ae8c941487045724a665d654e9d94120da43777393655d9",
-      "dependencies": [
-        "jsr:@deno-library/crc32",
-        "jsr:@std/fs@1.0.5",
-        "jsr:@std/io",
-        "jsr:@std/path@1.0.8",
-        "jsr:@std/tar",
-        "jsr:@zip-js/zip-js"
-      ]
-    },
-    "@deno-library/crc32@1.0.2": {
-      "integrity": "d2061bfee30c87c97f285dfca0fdc4458e632dc072a33ecfc73ca5177a5a39a0"
-    },
     "@dewars/pattern@5.1.2": {
       "integrity": "d0b64c350c2548bdd8fad7e1c48ae09935a3297ef4ba9fb72dbb7d3c20445119"
     },
@@ -80,9 +58,6 @@
     },
     "@eta-dev/eta@3.5.0": {
       "integrity": "6b70827efc14c7cbf08498ac7a922ecab003641caf3852a6cb5b1b12ee58fb37"
-    },
-    "@std/bytes@1.0.5": {
-      "integrity": "4465dd739d7963d964c809202ebea6d5c6b8e3829ef25c6a224290fbb8a1021e"
     },
     "@std/cli@1.0.1": {
       "integrity": "d0661fba13b30e3c0121646589fa9beeeabe92482c6b04679ea0e7ec683d97f2"
@@ -96,53 +71,20 @@
     "@std/fs@1.0.0": {
       "integrity": "d72e4a125af7168d717a2ed1dca77a728b422b0d138fd20579e3fa41a77da943",
       "dependencies": [
-        "jsr:@std/path@^1.0.2"
-      ]
-    },
-    "@std/fs@1.0.5": {
-      "integrity": "41806ad6823d0b5f275f9849a2640d87e4ef67c51ee1b8fb02426f55e02fd44e",
-      "dependencies": [
-        "jsr:@std/path@^1.0.7"
-      ]
-    },
-    "@std/io@0.225.0": {
-      "integrity": "c1db7c5e5a231629b32d64b9a53139445b2ca640d828c26bf23e1c55f8c079b3",
-      "dependencies": [
-        "jsr:@std/bytes"
+        "jsr:@std/path"
       ]
     },
     "@std/path@1.0.2": {
       "integrity": "a452174603f8c620bd278a380c596437a9eef50c891c64b85812f735245d9ec7"
     },
-    "@std/path@1.0.8": {
-      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
-    },
-    "@std/streams@1.0.9": {
-      "integrity": "a9d26b1988cdd7aa7b1f4b51e1c36c1557f3f252880fa6cc5b9f37078b1a5035"
-    },
-    "@std/tar@0.1.3": {
-      "integrity": "531270fc707b37ab9b5f051aa4943e7b16b86905e0398a4ebe062983b0c93115",
-      "dependencies": [
-        "jsr:@std/streams"
-      ]
-    },
     "@std/text@1.0.11": {
       "integrity": "f191fa22590cac8b1cdba6cc4ab97940e720f7cc67b3084e54405b428bf5843d"
     },
-    "@zip-js/zip-js@2.7.53": {
-      "integrity": "acea5bd8e01feb3fe4c242cfbde7d33dd5e006549a4eb1d15283bc0c778ed672"
+    "@yu7400ki/zstd-wasm@0.1.0": {
+      "integrity": "8154d601b9295927fe124cd6873a43d504af3e9ee5b17bf81903aeba66171e88"
     }
   },
   "npm": {
-    "@ark/schema@0.44.4": {
-      "integrity": "sha512-TsZTX+k5J7xsGABsFjVdRUNgViGDMLv73sikBM8JNxC4STe0suTuMNa1OJ/AFP2N+LpJ1zL9tdWlg28PRqAYhg==",
-      "dependencies": [
-        "@ark/util"
-      ]
-    },
-    "@ark/util@0.44.4": {
-      "integrity": "sha512-zLfNZrsq5Dq+8B0pHJwL/wD3xNBHb8FoP0FuPB455w7HpqVaqO5qPXvn+YoO8v1Y6pNwLVsM9vCIiO221LoODQ=="
-    },
     "@babel/code-frame@7.26.2": {
       "integrity": "sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==",
       "dependencies": [
@@ -182,6 +124,18 @@
         "yaml-ast-parser"
       ]
     },
+    "@types/node@22.12.0": {
+      "integrity": "sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
+    "@types/node@22.13.13": {
+      "integrity": "sha512-ClsL5nMwKaBRwPcCvH8E7+nU4GxHVx1axNvMZTFHMEfNI7oahimt26P5zjVCRrjiIWj6YFXfE1v3dEp94wLcGQ==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
     "agent-base@7.1.1": {
       "integrity": "sha512-H0TSyFNDMomMNJQBn8wFV5YC/2eJ+VXECwOadZJT554xP6cODZHPX3H9QMQECxvrgiSOP1pHjy1sMWQVYJOUOA==",
       "dependencies": [
@@ -193,13 +147,6 @@
     },
     "argparse@2.0.1": {
       "integrity": "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="
-    },
-    "arktype@2.1.9": {
-      "integrity": "sha512-bq46shcLpfop4D9acVQN/+quZ+hIGs4OUzoLq2vCaZLdkITOlWkfamBk9abMuC6fbgxW1fu/2PamcQgggWhTwQ==",
-      "dependencies": [
-        "@ark/schema",
-        "@ark/util"
-      ]
     },
     "balanced-match@1.0.2": {
       "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="
@@ -308,6 +255,9 @@
     },
     "typescript@5.7.2": {
       "integrity": "sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg=="
+    },
+    "undici-types@6.20.0": {
+      "integrity": "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="
     },
     "uri-js-replace@1.0.1": {
       "integrity": "sha512-W+C9NWNLFOoBI2QWDp4UT9pv65r2w5Cx+3sTYFvtMdDBxkKt1syCqsUdSFAChbEe1uK5TfS04wt/nGwmaeIQ0g=="
@@ -514,7 +464,6 @@
   "workspace": {
     "dependencies": [
       "jsr:@cliffy/command@^1.0.0-rc.7",
-      "jsr:@deno-library/compress@~0.5.5",
       "jsr:@dewars/pattern@^5.1.2",
       "jsr:@es-toolkit/es-toolkit@^1.13.1",
       "jsr:@eta-dev/eta@^3.5.0",
@@ -522,7 +471,9 @@
       "jsr:@std/fmt@~0.225.6",
       "jsr:@std/fs@1",
       "jsr:@std/path@^1.0.2",
-      "npm:arktype@^2.1.9",
+      "jsr:@yu7400ki/zstd-wasm@0.1",
+      "npm:@types/node@*",
+      "npm:@types/node@^22.13.13",
       "npm:change-case@^5.4.4"
     ]
   }

@@ -3,15 +3,9 @@ import { uniq } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
-import { camelCase } from "change-case";
+import { camelCase } from "@es-toolkit/es-toolkit";
 
-import type {
-	Parameter,
-	Response as Res,
-	Route,
-	SwaggerResponse,
-	Type,
-} from "./types.ts";
+import type { Parameter, Response as Res, Route, SwaggerResponse, Type } from "./types.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const eta = new Eta({
@@ -153,17 +147,14 @@ const buildFunction = (
 	const id = meta.operationId;
 	const params = meta.parameters ? buildParams(meta.parameters) : null;
 	const url = path
-		.replaceAll(/\{(.+)\}/gi, (c) => `{${camelCase(c)}}`)
+		.replaceAll(/\{(.+)}/gi, (c) => `{${camelCase(c)}}`)
 		.replaceAll("{", "${");
 	const query = meta.parameters ? buildQuery(meta.parameters) : "";
 
 	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
-	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
-		? "`"
-		: '"';
+	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c))) ? "`" : '"';
 
-	const bodyRef =
-		meta.requestBody &&
+	const bodyRef = meta.requestBody &&
 		"application/json" in meta.requestBody.content &&
 		meta.requestBody.content["application/json"].schema;
 

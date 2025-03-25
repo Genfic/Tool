@@ -1,44 +1,44 @@
 import { ch } from "./chars.ts";
 import { bold } from "@std/fmt/colors";
-import { title } from "./stringUtils.ts";
+import { startCase } from "@es-toolkit/es-toolkit";
 
 export class Table {
-	#header?: string[];
-	#body: string[][] = [[]];
-	#footer: string[][] = [[]];
+	private headerArray?: string[];
+	private bodyArray: string[][] = [[]];
+	private footerArray: string[][] = [[]];
 
 	header(header: string[]) {
-		this.#header = header;
+		this.headerArray = header;
 		return this;
 	}
 
 	body(body: string[][]) {
-		this.#body = body;
+		this.bodyArray = body;
 		return this;
 	}
 
 	objectBody<T extends object>(body: T[]) {
-		this.#header = Object.keys(body[0]);
-		this.#body = body.map(Object.values);
+		this.headerArray = Object.keys(body[0]);
+		this.bodyArray = body.map(Object.values);
 		return this;
 	}
 
 	push(row: string[]) {
-		this.#body.push(row);
+		this.bodyArray.push(row);
 		return this;
 	}
 
 	footer(footer: string[][]) {
-		this.#footer = footer;
+		this.footerArray = footer;
 		return this;
 	}
 
 	toString() {
-		return [this.#header, ...this.#body, ...this.#footer].join("\n");
+		return [this.headerArray, ...this.bodyArray, ...this.footerArray].join("\n");
 	}
 
 	render() {
-		const allRows = [this.#header ?? [], ...this.#footer, ...this.#body];
+		const allRows = [this.headerArray ?? [], ...this.footerArray, ...this.bodyArray];
 
 		const cols = Math.max(...allRows.map((r) => r.length));
 		const colWidths = allRows
@@ -53,18 +53,18 @@ export class Table {
 
 		console.log(this.buildHorizontalBorder(colWidths, "top"));
 
-		if (this.#header) {
-			console.log(this.buildRow(this.#header.map(title), colWidths, true));
+		if (this.headerArray) {
+			console.log(this.buildRow(this.headerArray.map(startCase), colWidths, true));
 			console.log(this.buildHorizontalBorder(colWidths, "middle"));
 		}
 
-		for (const row of this.#body) {
+		for (const row of this.bodyArray) {
 			console.log(this.buildRow(row, colWidths));
 		}
 
-		if (this.#footer) {
+		if (this.footerArray) {
 			console.log(this.buildHorizontalBorder(colWidths, "middle"));
-			for (const row of this.#footer) {
+			for (const row of this.footerArray) {
 				console.log(this.buildRow(row, colWidths));
 			}
 		}

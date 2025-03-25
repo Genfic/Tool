@@ -3,8 +3,11 @@ version: "3"
 tasks:
   start: ./index.ts
   release: deno compile --allow-all --output ./bin/ogma-tool index.ts
-  install: deno install --force --allow-all --global --name ogma-tool --config ./deno.jsonc index.ts
-  bundlesize: deno run --allow-read ./index.ts bundlesize "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "G:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
-  generate-imports: deno run --allow-read ./index.ts generate-imports "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
-  generate-preloads: deno run --allow-read ./index.ts generate-preloads "G:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
+  install:
+    deps: [ release ]
+    cmds:
+      - deno install --force --allow-all --global --name ogma-tool --config ./deno.jsonc index.ts
+  bundlesize: deno run --allow-read ./index.ts bundle-size "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
+  generate-imports: deno run --allow-read ./index.ts generate-imports "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
+  generate-preloads: deno run --allow-read ./index.ts generate-preloads "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
   generate-paths: deno run --allow-net --unsafely-ignore-certificate-errors=localhost --allow-read --allow-write ./index.ts generate-paths "out" --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json"
