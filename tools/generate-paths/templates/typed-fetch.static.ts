@@ -1,9 +1,9 @@
 interface TypedResponse<T> {
-	ok: boolean;
-	status: number;
-	statusText: string;
-	headers: Headers;
-	data: T;
+	readonly ok: boolean;
+	readonly status: number;
+	readonly statusText: string;
+	readonly headers: Headers;
+	readonly data: T;
 }
 
 export async function typedFetch<TOut>(
@@ -12,7 +12,7 @@ export async function typedFetch<TOut>(
 	body?: object,
 	headers?: HeadersInit,
 	options?: RequestInit,
-): Promise<TypedResponse<TOut>> {
+): Promise<Readonly<TypedResponse<TOut>>> {
 	const res = await fetch(url, {
 		method: method,
 		headers: {
