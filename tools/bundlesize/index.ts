@@ -3,7 +3,7 @@ import { format as bytes } from "@std/fmt/bytes";
 import { expandGlobSync, type WalkEntry } from "@std/fs";
 import { Table } from "../../helpers/table.ts";
 import type { FileData, PathData } from "./types.ts";
-import { brotliCompressSync, gzipSync } from "node:zlib";
+import { brotli, gzip } from "@deno-library/compress";
 import { compress as compressZstd } from "@yu7400ki/zstd-wasm";
 
 export const bundleSize = async (paths: string[]) => {
@@ -85,8 +85,8 @@ const getCompressedSizes = async (files: PathData[]) => {
 	}
 	const content = new TextEncoder().encode(f);
 	return {
-		brotli: brotliCompressSync(content).length,
-		gzip: gzipSync(content).length,
+		brotli: (await brotli.compress(content)).length,
+		gzip: gzip(content).length,
 		zstd: (await compressZstd(content)).length,
 	};
 };
