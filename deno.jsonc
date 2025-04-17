@@ -6,16 +6,10 @@
     "indentWidth": 4,
     "singleQuote": false,
     "semiColons": true,
-    "include": [
-      "**/*.ts"
-    ]
+    "include": ["**/*.ts"]
   },
-  "exclude": [
-    "out"
-  ],
-  "unstable": [
-    "temporal"
-  ],
+  "exclude": ["out"],
+  "unstable": ["temporal"],
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.7",
     "@deno-library/compress": "jsr:@deno-library/compress@^0.5.6",
@@ -27,11 +21,9 @@
     "@std/fs": "jsr:@std/fs@^1.0.0",
     "@std/path": "jsr:@std/path@^1.0.2",
     "@types/node": "npm:@types/node@^22.13.13",
-    "@yu7400ki/zstd-wasm": "jsr:@yu7400ki/zstd-wasm@^0.1.0",
+    "@yu7400ki/zstd-wasm": "jsr:@yu7400ki/zstd-wasm@^0.1.0"
   },
   "compilerOptions": {
-    types: [
-      "npm:@types/node"
-    ]
+    "types": ["npm:@types/node"]
   }
 }

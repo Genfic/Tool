@@ -3,7 +3,7 @@ import type {
 	<%= type %>,
 <% }) %>
 } from './types-<%= it.key %>';
-import { typedFetch } from './typed-fetch';
+import { typedFetch, get, post, put, patch, del, head } from './typed-fetch';
 
 <% it.paths.forEach((path) => { %>
 	<%_ = path %>
