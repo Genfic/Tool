@@ -34,15 +34,44 @@ const replaceType = (type: string): string => {
 			float: "number",
 			bool: "boolean",
 			string: "string",
+			date: "Date",
 		}[type] ?? "unknown"
 	);
+};
+
+const getTypeActual = (type: Type): { type: string; nullable?: boolean } => {
+	const t: { type: string; nullable?: boolean } = { type: "unknown" };
+
+	if (type.format === "date-time") {
+		t.type = "date";
+	} else if (typeof type.type === "string") {
+		if (type.type === "object" && type.additionalProperties) {
+			const { type: at, nullable: an } = getTypeActual(
+				type.additionalProperties,
+			);
+			t.type = at;
+			t.nullable = an;
+		} else {
+			t.type = type.type;
+		}
+	} else if (type.format?.startsWith("int") || type.type.includes("integer")) {
+		t.type = "integer";
+	} else if (type.type.includes("string")) {
+		t.type = "string";
+	}
+
+	if (type.type.includes("null")) {
+		t.nullable = true;
+	}
+	return t;
 };
 
 const buildParams = (parameters: Parameter[]): string[] => {
 	const params = [];
 	for (const param of parameters) {
+		const { type, nullable } = getTypeActual(param.schema);
 		if (param.in !== "path" && param.in !== "query") continue;
-		const p = `${camelCase(param.name)}: ${replaceType(param.schema.type)}`;
+		const p = `${camelCase(param.name)}: ${replaceType(type)}${nullable ? " | null" : ""}`;
 		params.push(p);
 	}
 	return params;
@@ -66,11 +95,14 @@ const parseType = (
 ): [typeString: string | undefined, skipImport: boolean] => {
 	const typeMappings: { [key: string]: string } = {
 		integer: "number",
+		date: "Date",
 		undefined: "object",
 		array: "object[]",
 	};
 
 	const extract = (ref: string | undefined) => ref?.split("/").at(-1);
+
+	let nullable = false;
 
 	const ret = match<
 		Type,
@@ -82,10 +114,9 @@ const parseType = (
 			const [t, skip] = parseType(s.items);
 			return [`${t}[]`, skip];
 		})
-		.with({ enum: P.nonNullable }, (s) => [
-			s.enum.map((e) => `"${e}"`).join(" | "),
-			true,
-		])
+		.with({ enum: P.nonNullable }, (s) => {
+			return [s.enum.map((e) => `"${e}"`).join(" | "), true];
+		})
 		.with({ oneOf: P.nonNullable }, (s) => {
 			const subtypes = [];
 			for (const t of s.oneOf) {
@@ -108,13 +139,14 @@ const parseType = (
 			}
 			return [eta.render("type", { props }), true];
 		})
-		.with({ type: P.nonNullable }, (s) => [
-			typeMappings[s.type] ?? s.type,
-			true,
-		])
+		.with({ type: P.nonNullable }, (s) => {
+			const { type, nullable: nl } = getTypeActual(s);
+			nullable = nl ?? false;
+			return [typeMappings[type] ?? type, true];
+		})
 		.otherwise(() => [undefined, true]);
 
-	if (schema.nullable) {
+	if (nullable) {
 		ret[0] += " | null";
 	}
 

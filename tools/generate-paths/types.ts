@@ -44,11 +44,12 @@ export interface RequestBody {
 }
 
 export interface Type {
-	type: string;
+	type: string | string[];
 	enum?: string[] | undefined;
 	format?: string | undefined;
 	nullable?: boolean | undefined;
 	properties?: Record<string, Type> | undefined;
+	additionalProperties?: Type | undefined;
 	items?: Type | undefined;
 	oneOf?: Type[] | undefined;
 	$ref?: string | undefined;
