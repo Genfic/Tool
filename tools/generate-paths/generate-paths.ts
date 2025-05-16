@@ -40,7 +40,10 @@ const replaceType = (type: string): string => {
 };
 
 const getTypeActual = (type: Type): { type: string; nullable?: boolean } => {
-	const t: { type: string; nullable?: boolean } = { type: "unknown" };
+	const t: { type: string; nullable?: boolean } = {
+		type: "unknown",
+		nullable: type.nullable,
+	};
 
 	if (type.format === "date-time") {
 		t.type = "date";
@@ -102,7 +105,7 @@ const parseType = (
 
 	const extract = (ref: string | undefined) => ref?.split("/").at(-1);
 
-	let nullable = false;
+	let nullable = schema.nullable ?? false;
 
 	const ret = match<
 		Type,
