@@ -1,5 +1,8 @@
 {
 <% it.props.forEach((p) => { %>
-	<%= p.name %>: <%= p.type ?? 'unknown' %>;
-<%})%>
+<% if (p.description) { %>
+    /** <%= p.description %> */
+<% } %>
+    <%= p.name %>: <%= p.type ?? 'unknown' %>;
+<% }) %>
 }

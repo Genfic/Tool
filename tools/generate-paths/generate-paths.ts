@@ -5,13 +5,7 @@ import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
 import { camelCase } from "@es-toolkit/es-toolkit";
 
-import type {
-	Parameter,
-	Response as Res,
-	Route,
-	SwaggerResponse,
-	Type,
-} from "./types.ts";
+import type { Parameter, Response as Res, Route, SwaggerResponse, Type } from "./types.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const eta = new Eta({
@@ -95,7 +89,7 @@ const buildQuery = (parameters: Parameter[]): string => {
 
 const parseType = (
 	schema: Type,
-): [typeString: string | undefined, skipImport: boolean] => {
+): [typeString: string | undefined, skipImport: boolean, description?: string] => {
 	const typeMappings: { [key: string]: string } = {
 		integer: "number",
 		date: "Date",
@@ -132,13 +126,13 @@ const parseType = (
 			return [subtypes.join(" | "), true];
 		})
 		.with({ properties: P.nonNullable }, (s) => {
-			const props: { name: string; type: string }[] = [];
+			const props: { name: string; type: string; description?: string }[] = [];
 			for (const [key, value] of Object.entries(s.properties)) {
 				const [parsed, _] = parseType(value);
 				if (!parsed) {
 					continue;
 				}
-				props.push({ name: key, type: parsed });
+				props.push({ name: key, type: parsed, description: value.description });
 			}
 			return [eta.render("type", { props }), true];
 		})
@@ -156,7 +150,7 @@ const parseType = (
 	return ret;
 };
 
-const buildResponseType = (response: Res): [string | undefined, boolean] => {
+const buildResponseType = (response: Res): [string | undefined, boolean, string?] => {
 	if (!response.content) {
 		return [undefined, true];
 	}
@@ -193,12 +187,9 @@ const buildFunction = (
 	const query = meta.parameters ? buildQuery(meta.parameters) : "";
 
 	// If the path or the query contains `{}`s, that means the resulting string has to use an interpolated string
-	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c)))
-		? "`"
-		: '"';
+	const q = [path, query].some((s) => ["{", "}"].every((c) => s.includes(c))) ? "`" : '"';
 
-	const bodyRef =
-		meta.requestBody &&
+	const bodyRef = meta.requestBody &&
 		"application/json" in meta.requestBody.content &&
 		meta.requestBody.content["application/json"].schema;
 
@@ -207,7 +198,7 @@ const buildFunction = (
 	// Check if body type is an empty type
 	const isNotEmpty = bodyType && schemas[bodyType]?.properties !== undefined;
 
-	const responseTypes: [string | undefined, boolean][] = [];
+	const responseTypes: [string | undefined, boolean, string?][] = [];
 	for (const [_, response] of Object.entries(meta.responses)) {
 		const t = buildResponseType(response);
 		if (t) {

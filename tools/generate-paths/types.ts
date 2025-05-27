@@ -52,5 +52,6 @@ export interface Type {
 	additionalProperties?: Type | undefined;
 	items?: Type | undefined;
 	oneOf?: Type[] | undefined;
+	description?: string | undefined;
 	$ref?: string | undefined;
 }
