@@ -19,6 +19,9 @@ const eta = new Eta({
 	},
 });
 
+let VERBOSE = false;
+let CURRENT_FUNCTION = "";
+
 const replaceType = (type: string): string => {
 	return (
 		{
@@ -34,6 +37,8 @@ const replaceType = (type: string): string => {
 };
 
 const getTypeActual = (type: Type): { type: string; nullable?: boolean } => {
+	VERBOSE && console.log("Getting type actual for", type);
+
 	const t: { type: string; nullable?: boolean } = {
 		type: "unknown",
 		nullable: type.nullable,
@@ -64,9 +69,16 @@ const getTypeActual = (type: Type): { type: string; nullable?: boolean } => {
 };
 
 const buildParams = (parameters: Parameter[]): string[] => {
+	VERBOSE && console.log(`Building params for ${CURRENT_FUNCTION}`);
+
 	const params = [];
 	for (const param of parameters) {
-		const { type, nullable } = getTypeActual(param.schema);
+		const { type } = getTypeActual(param.schema);
+
+		const nullable = !param.required;
+
+		VERBOSE && console.log("Param", param, type, nullable);
+
 		if (param.in !== "path" && param.in !== "query") continue;
 		const p = `${camelCase(param.name)}: ${replaceType(type)}${nullable ? " | null" : ""}`;
 		params.push(p);
@@ -90,6 +102,8 @@ const buildQuery = (parameters: Parameter[]): string => {
 const parseType = (
 	schema: Type,
 ): [typeString: string | undefined, skipImport: boolean, description?: string] => {
+	VERBOSE && console.log("Parsing type", schema);
+
 	const typeMappings: { [key: string]: string } = {
 		integer: "number",
 		date: "Date",
@@ -179,6 +193,9 @@ const buildFunction = (
 	type: string | null;
 	responseTypes: string[];
 } => {
+	CURRENT_FUNCTION = meta.operationId;
+	VERBOSE && console.log("Building function for", meta.operationId, meta);
+
 	const id = meta.operationId;
 	const params = meta.parameters ? buildParams(meta.parameters) : null;
 	const url = path
@@ -295,7 +312,9 @@ const typedFetch = await Deno.readTextFile(
 export const generatePaths = async (
 	outDir: string,
 	paths: { key: string; value: string }[],
+	verbose: boolean,
 ) => {
+	VERBOSE = verbose;
 	await ensureDir(outDir);
 	for (const { key, value } of paths) {
 		const start = Temporal.Now.instant();

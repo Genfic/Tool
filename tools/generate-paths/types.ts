@@ -34,7 +34,7 @@ export type Content = {
 export interface Parameter {
 	name: string;
 	in: string;
-	required: boolean;
+	required?: boolean | undefined;
 	schema: Type;
 }
 

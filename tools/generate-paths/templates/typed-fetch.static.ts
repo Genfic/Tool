@@ -23,13 +23,15 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
 type ResponseType = {
 	[K in keyof Response]: Response[K] extends (
 		...args: unknown[]
-	) => Promise<unknown>
-		? K
+	) => Promise<unknown> ? K
 		: never;
 }[keyof Response];
 
+type CustomString = string & { ___?: never };
+
 type RequestOptions = Omit<RequestInit, "method" | "headers" | "body"> & {
 	responseType?: ResponseType;
+	ignoreErrors?: boolean;
 };
 
 export const get: HttpMethod = "GET";
@@ -39,11 +41,36 @@ export const patch: HttpMethod = "PATCH";
 export const del: HttpMethod = "DELETE";
 export const head: HttpMethod = "HEAD";
 
+export type KnownHeaders =
+	| "Accept"
+	| "Accept-Charset"
+	| "Accept-Encoding"
+	| "Accept-Language"
+	| "Authorization"
+	| "Cache-Control"
+	| "Content-Length"
+	| "Content-Type"
+	| "Cookie"
+	| "ETag"
+	| "Forwarded"
+	| "From"
+	| "Host"
+	| "If-Match"
+	| "If-Modified-Since"
+	| "If-None-Match"
+	| "If-Range"
+	| "If-Unmodified-Since"
+	| "Max-Forwards"
+	| "Origin"
+	| "Range"
+	| "Referer"
+	| "User-Agent";
+
 export async function typedFetch<TOut, TBody>(
 	url: string,
-	method: HttpMethod | (string & { ___?: never }),
+	method: HttpMethod | CustomString,
 	body?: TBody,
-	headers?: HeadersInit,
+	headers?: Record<KnownHeaders | CustomString, string>,
 	options?: RequestOptions,
 ): Promise<TypedResponse<TOut, string>> {
 	try {
@@ -57,7 +84,7 @@ export async function typedFetch<TOut, TBody>(
 			...options,
 		});
 
-		if (!res.ok) {
+		if (res.status >= 400 && !options?.ignoreErrors) {
 			return {
 				ok: false,
 				status: res.status,
@@ -68,17 +95,15 @@ export async function typedFetch<TOut, TBody>(
 		}
 		const contentType = res.headers.get("Content-Type")?.toLowerCase() || "";
 
-		const data = options?.responseType
-			? await res[options.responseType]()
-			: await (() => {
-					if (contentType.includes("application/json")) {
-						return res.json();
-					}
-					if (/^(application|image|audio|video)\//.test(contentType)) {
-						return res.blob();
-					}
-					return res.text();
-				})();
+		const data = options?.responseType ? await res[options.responseType]() : await (() => {
+			if (contentType.includes("application/json")) {
+				return res.json();
+			}
+			if (/^(application|image|audio|video)\//.test(contentType)) {
+				return res.blob();
+			}
+			return res.text();
+		})();
 
 		return {
 			ok: true,

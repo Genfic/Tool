@@ -28,8 +28,9 @@ await new Command()
 	.option("--path.* [type:string]", "Path to the OpenAPI file", {
 		collect: true,
 	})
+	.option("--verbose", "Verbose output")
 	.description("Generate paths")
-	.action(async ({ path }, out: string) => {
+	.action(async ({ path, verbose }, out: string) => {
 		if (!path) {
 			throw new Error("No path provided");
 		}
@@ -39,6 +40,7 @@ await new Command()
 			Object.entries(path).flatMap(([k, v]: [string, unknown]) =>
 				Array.isArray(v) ? v.map((x: string) => ({ key: k, value: x })) : []
 			),
+			verbose ?? false,
 		);
 	})
 	.parse(Deno.args);
