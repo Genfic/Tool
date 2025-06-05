@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "lib": [
+      "dom",
+      "es2023"
+    ],
+    "types": []
+  },
+  "include": [
+    "typed-fetch.static.ts"
+  ]
+}

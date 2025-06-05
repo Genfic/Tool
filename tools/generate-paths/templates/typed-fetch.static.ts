@@ -1,4 +1,4 @@
-type SuccessResponse<TData> = {
+export type SuccessResponse<TData> = {
 	readonly ok: true;
 	readonly status: number;
 	readonly statusText: string;
@@ -6,7 +6,7 @@ type SuccessResponse<TData> = {
 	readonly data: TData;
 };
 
-type ErrorResponse<TError> = {
+export type ErrorResponse<TError> = {
 	readonly ok: false;
 	readonly status: number;
 	readonly statusText: string;
@@ -14,7 +14,7 @@ type ErrorResponse<TError> = {
 	readonly error: TError;
 };
 
-type TypedResponse<TData, TError> =
+export type TypedResponse<TData, TError> =
 	| SuccessResponse<TData>
 	| ErrorResponse<TError>;
 
@@ -29,7 +29,7 @@ type ResponseType = {
 
 type CustomString = string & { ___?: never };
 
-type RequestOptions = Omit<RequestInit, "method" | "headers" | "body"> & {
+export type RequestOptions = Omit<RequestInit, "method" | "headers" | "body"> & {
 	responseType?: ResponseType;
 	ignoreErrors?: boolean;
 };
@@ -53,16 +53,11 @@ export type KnownHeaders =
 	| "Cookie"
 	| "ETag"
 	| "Forwarded"
-	| "From"
-	| "Host"
 	| "If-Match"
 	| "If-Modified-Since"
 	| "If-None-Match"
-	| "If-Range"
 	| "If-Unmodified-Since"
-	| "Max-Forwards"
 	| "Origin"
-	| "Range"
 	| "Referer"
 	| "User-Agent";
 
@@ -93,24 +88,30 @@ export async function typedFetch<TOut, TBody>(
 				error: await res.text().catch(() => res.statusText),
 			};
 		}
-		const contentType = res.headers.get("Content-Type")?.toLowerCase() || "";
+		const contentType = res.headers.get("Content-Type")?.toLowerCase() ?? "";
 
-		const data = options?.responseType ? await res[options.responseType]() : await (() => {
-			if (contentType.includes("application/json")) {
-				return res.json();
-			}
-			if (/^(application|image|audio|video)\//.test(contentType)) {
-				return res.blob();
-			}
-			return res.text();
-		})();
+		let data: unknown;
+
+		if (options?.responseType) {
+			data = await res[options.responseType]();
+		} else if (contentType.includes("application/json")) {
+			const text = await res.text();
+			data = JSON.parse(text, (_, value) => {
+				const date = new Date(value);
+				return isNaN(date.getTime()) ? value : date;
+			});
+		} else if (/^(application|image|audio|video)\//.test(contentType)) {
+			data = await res.blob();
+		} else {
+			data = await res.text();
+		}
 
 		return {
 			ok: true,
 			status: res.status,
 			statusText: res.statusText,
 			headers: res.headers,
-			data: data,
+			data: data as TOut,
 		};
 	} catch (e) {
 		return {
