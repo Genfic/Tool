@@ -61,6 +61,16 @@ export type KnownHeaders =
 	| "Referer"
 	| "User-Agent";
 
+export const isoDateRegex = /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?)((Z)|([+-]\d{2}:\d{2}))?$/;
+
+export const DateSafeJsonParse = <T>(text: string): T => JSON.parse(text, (_, value) => {
+	if (typeof value === 'string' && isoDateRegex.test(value)) {
+		const date = new Date(value);
+		if (!Number.isNaN(date.getTime())) return date;
+	}
+	return value as T;
+})
+
 export async function typedFetch<TOut, TBody>(
 	url: string,
 	method: HttpMethod | CustomString,
@@ -96,10 +106,7 @@ export async function typedFetch<TOut, TBody>(
 			data = await res[options.responseType]();
 		} else if (contentType.includes("application/json")) {
 			const text = await res.text();
-			data = JSON.parse(text, (_, value) => {
-				const date = new Date(value);
-				return isNaN(date.getTime()) ? value : date;
-			});
+			data = DateSafeJsonParse(text);
 		} else if (/^(application|image|audio|video)\//.test(contentType)) {
 			data = await res.blob();
 		} else {
