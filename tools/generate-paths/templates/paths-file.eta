@@ -1,9 +1,9 @@
+import { del, get, head, patch, post, put, typedFetch } from "./typed-fetch";
 import type {
 <% it.typeImports.forEach((type) => { %>
 	<%= type %>,
 <% }) %>
 } from './types-<%= it.key %>';
-import { typedFetch, get, post, put, patch, del, head } from './typed-fetch';
 
 <% it.paths.forEach((path) => { %>
 	<%_ = path %>

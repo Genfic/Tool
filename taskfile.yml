@@ -2,12 +2,15 @@ version: "3"
 
 tasks:
   start: ./index.ts
-  release: deno compile --allow-all --output ./bin/ogma-tool index.ts
-  install:
-    deps: [ release ]
+  release:
     cmds:
-      - deno install --force --allow-all --global --name ogma-tool --config ./deno.jsonc index.ts
-  bundlesize: deno run --allow-read ./index.ts bundle-size "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
-  generate-imports: deno run --allow-read ./index.ts generate-imports "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
-  generate-preloads: deno run --allow-read ./index.ts generate-preloads "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
-  generate-paths: deno run --allow-net --unsafely-ignore-certificate-errors=localhost --allow-read --allow-write ./index.ts generate-paths "out" --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json" --verbose
+      - echo {{date "2006-01-02 15:04:05" now}} > stamp.txt
+      - deno compile --unstable-raw-imports --include ./tools/generate-paths/templates --allow-net --allow-read --allow-write --output ./bin/ogma-tool index.ts
+  install:
+    deps: [release]
+    cmds:
+      - deno install --unstable-raw-imports --allow-net --allow-read --allow-write --force --global --name ogma-tool --config ./deno.jsonc index.ts
+  bundlesize: deno run --unstable-raw-imports --allow-read ./index.ts bundle-size "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
+  generate-imports: deno run --unstable-raw-imports --allow-read ./index.ts generate-imports "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
+  generate-preloads: deno run --unstable-raw-imports --allow-read ./index.ts generate-preloads "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
+  generate-paths: deno run --unstable-raw-imports --allow-net --unsafely-ignore-certificate-errors=localhost --allow-read --allow-write ./index.ts generate-paths "out" --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json" --verbose

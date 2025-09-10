@@ -1,5 +1,5 @@
 import { ensureDir } from "@std/fs";
-import { uniq } from "@es-toolkit/es-toolkit";
+import { compact, uniq } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
@@ -115,18 +115,18 @@ const parseType = (
 
 	let nullable = schema.nullable ?? false;
 
-	const ret = match<
+	const [typeStrings, skipImport] = match<
 		Type,
-		[typeString: string | undefined, skipImport: boolean]
+		[typeStrings: (string | undefined)[], skipImport: boolean]
 	>(schema)
-		.with({ $ref: P.nonNullable }, (s) => [extract(s.$ref), false])
-		.with({ format: "binary" }, () => ["Blob", true])
+		.with({ $ref: P.nonNullable }, (s) => [[extract(s.$ref)], false])
+		.with({ format: "binary" }, () => [["Blob"], true])
 		.with({ items: P.nonNullable }, (s) => {
 			const [t, skip] = parseType(s.items);
-			return [`${t}[]`, skip];
+			return [[`${t}[]`], skip];
 		})
 		.with({ enum: P.nonNullable }, (s) => {
-			return [s.enum.map((e) => `"${e}"`).join(" | "), true];
+			return [s.enum.map((e) => e ? `"${e}"` : "null"), true];
 		})
 		.with({ oneOf: P.nonNullable }, (s) => {
 			const subtypes = [];
@@ -137,7 +137,7 @@ const parseType = (
 				}
 				subtypes.push(parsed);
 			}
-			return [subtypes.join(" | "), true];
+			return [subtypes, true];
 		})
 		.with({ properties: P.nonNullable }, (s) => {
 			const props: { name: string; type: string; description?: string }[] = [];
@@ -148,20 +148,26 @@ const parseType = (
 				}
 				props.push({ name: key, type: parsed, description: value.description });
 			}
-			return [eta.render("type", { props }), true];
+			return [[eta.render("type", { props })], true];
 		})
 		.with({ type: P.nonNullable }, (s) => {
 			const { type, nullable: nl } = getTypeActual(s);
 			nullable = nl ?? false;
-			return [typeMappings[type] ?? type, true];
+			return [[typeMappings[type] ?? type], true];
 		})
-		.otherwise(() => [undefined, true]);
+		.otherwise(() => [[undefined], true]);
+
+	VERBOSE && console.log(`Parsed type (${nullable ? "nullable" : "not nullable"})`, typeStrings, skipImport);
 
 	if (nullable) {
-		ret[0] += " | null";
+		typeStrings.push('null');
 	}
 
-	return ret;
+	return [uniq(compact(typeStrings)).toSorted((a, b) => {
+		if (a === "null") return 1;
+		if (b === "null") return -1;
+		return a.localeCompare(b);
+	}).join(' | '), skipImport];
 };
 
 const buildResponseType = (response: Res): [string | undefined, boolean, string?] => {

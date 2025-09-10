@@ -3,8 +3,13 @@ import { bundleSize } from "./tools/bundlesize/index.ts";
 import { generateImports } from "./tools/generate-imports/index.ts";
 import { generatePaths } from "./tools/generate-paths/generate-paths.ts";
 import { generatePreloads } from "./tools/generate-preloads/index.ts";
+import stamp from "./stamp.txt" with { type: "text" };
 
 await new Command()
+	.command("info")
+	.action(() => {
+		console.log(`Build time: ${stamp}`);
+	})
 	.command("bundle-size")
 	.arguments("<...paths:string>")
 	.description("Calculate total bundle size")

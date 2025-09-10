@@ -1,5 +1,5 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
     "jsr:@cliffy/command@^1.0.0-rc.7": "1.0.0-rc.7",
     "jsr:@cliffy/flags@1.0.0-rc.7": "1.0.0-rc.7",
@@ -8,18 +8,18 @@
     "jsr:@deno-library/compress@~0.5.6": "0.5.6",
     "jsr:@deno-library/crc32@1.0.2": "1.0.2",
     "jsr:@dewars/pattern@^5.1.2": "5.1.2",
-    "jsr:@es-toolkit/es-toolkit@^1.13.1": "1.13.1",
+    "jsr:@es-toolkit/es-toolkit@^1.39.10": "1.39.10",
     "jsr:@es-toolkit/es-toolkit@^1.8.0": "1.8.0",
     "jsr:@eta-dev/eta@^3.5.0": "3.5.0",
     "jsr:@std/bytes@^1.0.2": "1.0.5",
     "jsr:@std/cli@^1.0.1": "1.0.1",
     "jsr:@std/fmt@~0.225.6": "0.225.6",
     "jsr:@std/fmt@~1.0.2": "1.0.3",
-    "jsr:@std/fs@1": "1.0.0",
+    "jsr:@std/fs@1": "1.0.5",
     "jsr:@std/fs@1.0.5": "1.0.5",
     "jsr:@std/io@0.225.0": "0.225.0",
     "jsr:@std/path@1.0.8": "1.0.8",
-    "jsr:@std/path@^1.0.2": "1.0.2",
+    "jsr:@std/path@^1.0.2": "1.0.8",
     "jsr:@std/path@^1.0.7": "1.0.8",
     "jsr:@std/streams@^1.0.7": "1.0.9",
     "jsr:@std/tar@0.1.3": "0.1.3",
@@ -77,8 +77,8 @@
     "@es-toolkit/es-toolkit@1.8.0": {
       "integrity": "53dfb8ed4ad423221e3afabf9b99b796a0635df8e84491c0d3ff80bfe9b05ecf"
     },
-    "@es-toolkit/es-toolkit@1.13.1": {
-      "integrity": "1c5ccd77035a743e2f4c2b7ae822f2af123d78670f790612b8ea2c668a7c197f"
+    "@es-toolkit/es-toolkit@1.39.10": {
+      "integrity": "8757072a13aa64b3b349ba2b9d7d22fbe7ea6f138506c6cd2222d767cd79918f"
     },
     "@eta-dev/eta@3.5.0": {
       "integrity": "6b70827efc14c7cbf08498ac7a922ecab003641caf3852a6cb5b1b12ee58fb37"
@@ -246,13 +246,15 @@
       "integrity": "sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==",
       "dependencies": [
         "argparse"
-      ]
+      ],
+      "bin": true
     },
     "json-schema-traverse@1.0.0": {
       "integrity": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="
     },
     "lodash.isequal@4.5.0": {
-      "integrity": "sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ=="
+      "integrity": "sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==",
+      "deprecated": true
     },
     "minimatch@5.1.6": {
       "integrity": "sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==",
@@ -267,6 +269,9 @@
       "integrity": "sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==",
       "dependencies": [
         "whatwg-url"
+      ],
+      "optionalPeers": [
+        "encoding@^0.1.0"
       ]
     },
     "openapi-typescript@7.4.3_typescript@5.7.2": {
@@ -279,7 +284,8 @@
         "supports-color",
         "typescript",
         "yargs-parser"
-      ]
+      ],
+      "bin": true
     },
     "parse-json@8.1.0": {
       "integrity": "sha512-rum1bPifK5SSar35Z6EKZuYPJx85pkNaFrxBK3mwdfSJ1/WKbYrjoW/zTPSjRRamfmVX1ACBIdFAO0VRErW/EA==",
@@ -308,7 +314,8 @@
       "integrity": "sha512-3Ta7CyV6daqpwuGJMJKABaUChZZejpzysZkQg1//bLRg2wKQ4duwsg3MMIsHuElq58iDqizg4DBUmK8H8wExJg=="
     },
     "typescript@5.7.2": {
-      "integrity": "sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg=="
+      "integrity": "sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==",
+      "bin": true
     },
     "undici-types@6.20.0": {
       "integrity": "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="
@@ -520,7 +527,7 @@
       "jsr:@cliffy/command@^1.0.0-rc.7",
       "jsr:@deno-library/compress@~0.5.6",
       "jsr:@dewars/pattern@^5.1.2",
-      "jsr:@es-toolkit/es-toolkit@^1.13.1",
+      "jsr:@es-toolkit/es-toolkit@^1.39.10",
       "jsr:@eta-dev/eta@^3.5.0",
       "jsr:@std/cli@^1.0.1",
       "jsr:@std/fmt@~0.225.6",
