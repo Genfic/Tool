@@ -1,7 +1,7 @@
 <% const body = it.bodyType && it.isNotEmpty ? `body: ${it.bodyType}, ` : null %>
 <% const method = it.method.toLowerCase %>
 
-export const <%= it.id %> = async (<%_= body _%><%_= it.params?.join(', ') _%><%= it.params && ', ' %>headers?: HeadersInit, options?: RequestInit) => await typedFetch<<%= it.responseType%>, <%= it.bodyType ?? 'undefined'%>>(<%= it.q %><%= it.url %><%= it.query %><%= it.q %>,
+export const <%= it.id %> = async (<%_= body _%><%_= it.params?.join(', ') _%><%= it.params?.length > 0 ? ', ' : null %>headers?: HeadersInit, options?: RequestInit) => await typedFetch<<%= it.responseType%>, <%= it.bodyType ?? 'undefined'%>>(<%= it.q %><%= it.url %><%= it.query %><%= it.q %>,
 	<%= it.method === 'delete' ? 'del' : it.method %>,
 	<%= it.bodyType && it.isNotEmpty ? 'body' : 'undefined' %>,
 	headers,
