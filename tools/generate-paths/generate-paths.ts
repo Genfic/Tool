@@ -86,16 +86,14 @@ const buildParams = (parameters: Parameter[]): string[] => {
 	return params;
 };
 
-const encodeParam = (name: string) => encodeURIComponent(camelCase(name));
-
 const buildQuery = (parameters: Parameter[]): string => {
 	const params = [];
 	for (const param of parameters) {
 		if (param.in !== "query") continue;
-		let p = encodeParam(param.name);
-		p += "=${";
-		p += encodeParam(param.name);
-		p += "}";
+		let p = camelCase(param.name);
+		p += "=${_enc(";
+		p += camelCase(param.name);
+		p += ")}";
 		params.push(p);
 	}
 	return params.length > 0 ? `?${params.join("&")}` : "";
@@ -330,6 +328,8 @@ const typedFetch = await Deno.readTextFile(
 	path.join(__dirname, "templates/typed-fetch.static.ts"),
 );
 
+const compressNewlines = (s: string) => s.replace(/\n{3,}/g, "\n");
+
 export const generatePaths = async (
 	outDir: string,
 	paths: { key: string; value: string }[],
@@ -349,8 +349,8 @@ export const generatePaths = async (
 			paths,
 		});
 
-		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
-		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join("\n\n"));
+		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, compressNewlines(pathsFile));
+		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, compressNewlines(types.join("\n\n")));
 
 		const end = Temporal.Now.instant();
 		console.log(
