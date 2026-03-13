@@ -17,10 +17,10 @@ export interface Route {
 	operationId: string;
 	parameters?: Parameter[];
 	requestBody: RequestBody | null;
-	responses: Record<string, Response>;
+	responses: Record<string, ApiResponse>;
 }
 
-export interface Response {
+export interface ApiResponse {
 	description: string;
 	content: Content;
 }
@@ -52,6 +52,7 @@ export interface Type {
 	additionalProperties?: Type | undefined;
 	items?: Type | undefined;
 	oneOf?: Type[] | undefined;
+	anyOf?: Type[] | undefined;
 	description?: string | undefined;
 	$ref?: string | undefined;
 }

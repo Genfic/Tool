@@ -5,7 +5,7 @@ import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
 import { camelCase } from "@es-toolkit/es-toolkit";
 
-import type { Parameter, Response as Res, Route, SwaggerResponse, Type } from "./types.ts";
+import type { ApiResponse, Parameter, Route, SwaggerResponse, Type } from "./types.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const eta = new Eta({
@@ -62,7 +62,7 @@ const getTypeActual = (type: Type): { type: string; nullable?: boolean } => {
 		t.type = "string";
 	}
 
-	if (type.type.includes("null")) {
+	if (Array.isArray(type.type) && type.type.includes("null")) {
 		t.nullable = true;
 	}
 	return t;
@@ -86,13 +86,15 @@ const buildParams = (parameters: Parameter[]): string[] => {
 	return params;
 };
 
+const encodeParam = (name: string) => encodeURIComponent(camelCase(name));
+
 const buildQuery = (parameters: Parameter[]): string => {
 	const params = [];
 	for (const param of parameters) {
 		if (param.in !== "query") continue;
-		let p = camelCase(param.name);
+		let p = encodeParam(param.name);
 		p += "=${";
-		p += camelCase(param.name);
+		p += encodeParam(param.name);
 		p += "}";
 		params.push(p);
 	}
@@ -139,6 +141,17 @@ const parseType = (
 			}
 			return [subtypes, true];
 		})
+		.with({ anyOf: P.nonNullable }, (s) => {
+			const isNullable = s.anyOf.some((t) => t.type === "null");
+			const subtypes = s.anyOf
+				.filter((t) => t.type !== "null")
+				.map((t) => parseType(t)[0])
+				.filter(Boolean);
+			if (isNullable) {
+				nullable = true;
+			}
+			return [subtypes, false];
+		})
 		.with({ properties: P.nonNullable }, (s) => {
 			const props: { name: string; type: string; description?: string }[] = [];
 			for (const [key, value] of Object.entries(s.properties)) {
@@ -160,17 +173,20 @@ const parseType = (
 	VERBOSE && console.log(`Parsed type (${nullable ? "nullable" : "not nullable"})`, typeStrings, skipImport);
 
 	if (nullable) {
-		typeStrings.push('null');
+		typeStrings.push("null");
 	}
 
-	return [uniq(compact(typeStrings)).toSorted((a, b) => {
-		if (a === "null") return 1;
-		if (b === "null") return -1;
-		return a.localeCompare(b);
-	}).join(' | '), skipImport];
+	return [
+		uniq(compact(typeStrings)).toSorted((a, b) => {
+			if (a === "null") return 1;
+			if (b === "null") return -1;
+			return a.localeCompare(b);
+		}).join(" | "),
+		skipImport,
+	];
 };
 
-const buildResponseType = (response: Res): [string | undefined, boolean, string?] => {
+const buildResponseType = (response: ApiResponse): [string | undefined, boolean, string?] => {
 	if (!response.content) {
 		return [undefined, true];
 	}
@@ -184,7 +200,11 @@ const buildResponseType = (response: Res): [string | undefined, boolean, string?
 			{ "application/octet-stream": P.nonNullable },
 			(s) => s["application/octet-stream"].schema,
 		)
-		.exhaustive();
+		.otherwise(() => null);
+
+	if (!schema) {
+		return [undefined, true];
+	}
 
 	return parseType(schema);
 };
@@ -193,7 +213,6 @@ const buildFunction = (
 	path: string,
 	method: string,
 	meta: Route,
-	schemas: { [key: string]: Type },
 ): {
 	func: string;
 	type: string | null;
@@ -205,7 +224,7 @@ const buildFunction = (
 	const id = meta.operationId;
 	const params = meta.parameters ? buildParams(meta.parameters) : null;
 	const url = path
-		.replaceAll(/\{(.+)}/gi, (c) => `{${camelCase(c)}}`)
+		.replaceAll(/\{(.+?)}/gi, (_, g) => `{${camelCase(g)}}`)
 		.replaceAll("{", "${");
 	const query = meta.parameters ? buildQuery(meta.parameters) : "";
 
@@ -217,9 +236,6 @@ const buildFunction = (
 		meta.requestBody.content["application/json"].schema;
 
 	const [bodyType, _] = bodyRef ? parseType(bodyRef) : [undefined, false];
-
-	// Check if body type is an empty type
-	const isNotEmpty = bodyType && schemas[bodyType]?.properties !== undefined;
 
 	const responseTypes: [string | undefined, boolean, string?][] = [];
 	for (const [_, response] of Object.entries(meta.responses)) {
@@ -242,7 +258,7 @@ const buildFunction = (
 		query,
 		method,
 		bodyType,
-		isNotEmpty,
+		isNotEmpty: !!bodyType,
 	});
 
 	return {
@@ -283,7 +299,6 @@ const generate = async (
 				k,
 				pathKey,
 				pathVal as Route,
-				data.components.schemas,
 			);
 			paths.push(func);
 			if (type) {
