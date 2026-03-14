@@ -8,6 +8,9 @@
 		"semiColons": true,
 		"include": [
 			"**/*.ts"
+		],
+		"exclude": [
+			"**/*.eta",
 		]
 	},
 	"exclude": [
@@ -29,7 +32,7 @@
 		"@std/fs": "jsr:@std/fs@^1.0.0",
 		"@std/path": "jsr:@std/path@^1.0.2",
 		"@types/node": "npm:@types/node@^22.13.13",
-		"@yu7400ki/zstd-wasm": "jsr:@yu7400ki/zstd-wasm@^0.1.0"
+		"@yu7400ki/zstd-wasm": "jsr:@yu7400ki/zstd-wasm@^0.1.0",
 	},
 	"compilerOptions": {
 		"types": [

@@ -1,3 +1,4 @@
+<% /* @formatter:off */ %>
 import { del, get, head, patch, post, put, typedFetch } from "./typed-fetch";
 import type {
 <% it.typeImports.forEach((type) => { %>

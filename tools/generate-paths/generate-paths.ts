@@ -235,22 +235,26 @@ const buildFunction = (
 
 	const [bodyType, _] = bodyRef ? parseType(bodyRef) : [undefined, false];
 
-	const responseTypes: [string | undefined, boolean, string?][] = [];
-	for (const [_, response] of Object.entries(meta.responses)) {
-		const t = buildResponseType(response);
-		if (t) {
-			responseTypes.push(t);
+	const responseTypeMap: { status: string; type: string }[] = [];
+	const importableTypes = new Set<string>();
+
+	for (const [statusCode, response] of Object.entries(meta.responses)) {
+		const [t, skipImport] = buildResponseType(response);
+		responseTypeMap.push({
+			status: statusCode,
+			type: t ?? "undefined",
+		});
+		if (!skipImport && t) {
+			importableTypes.add(t.replace("[]", ""));
 		}
 	}
 
-	const responseType: string = responseTypes.every(([t, _]) => t === undefined)
-		? "void"
-		: uniq(responseTypes.map(([t, _]) => t).filter((t) => !!t)).join("|");
+	VERBOSE && console.log("TYPEMAP", responseTypeMap);
 
 	const func = eta.render("./function", {
 		id,
 		params,
-		responseType,
+		responseTypeMap,
 		q,
 		url,
 		query,
@@ -262,10 +266,7 @@ const buildFunction = (
 	return {
 		func,
 		type: bodyType ?? null,
-		responseTypes: responseTypes
-			.filter(([_, p]) => !p)
-			.map(([t, _]) => t?.replace("[]", ""))
-			.filter((x) => !!x) as string[],
+		responseTypes: [...importableTypes],
 	};
 };
 
@@ -328,8 +329,6 @@ const typedFetch = await Deno.readTextFile(
 	path.join(__dirname, "templates/typed-fetch.static.ts"),
 );
 
-const compressNewlines = (s: string) => s.replace(/\n{3,}/g, "\n");
-
 export const generatePaths = async (
 	outDir: string,
 	paths: { key: string; value: string }[],
@@ -349,8 +348,8 @@ export const generatePaths = async (
 			paths,
 		});
 
-		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, compressNewlines(pathsFile));
-		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, compressNewlines(types.join("\n\n")));
+		await Deno.writeTextFile(`${outDir}/paths-${key}.ts`, pathsFile);
+		await Deno.writeTextFile(`${outDir}/types-${key}.ts`, types.join("\n\n"));
 
 		const end = Temporal.Now.instant();
 		console.log(

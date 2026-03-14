@@ -1,3 +1,4 @@
+<% /* @formatter:off */ %>
 {
 <% it.props.forEach((p) => { %>
 <% if (p.description) { %>
