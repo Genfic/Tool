@@ -5,7 +5,7 @@ import type {
 	<%= type %>,
 <% }) %>
 } from './types-<%= it.key %>';
-const _enc = (p: string) => encodeURIComponent(p);
+const _enc = <T>(p: T): T extends string ? string : T => (typeof p === 'string' ? encodeURIComponent(p) : p) as any;
 
 <% it.paths.forEach((path) => { %>
 	<%_ = path %>
