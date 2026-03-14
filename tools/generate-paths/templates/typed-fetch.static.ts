@@ -1,11 +1,10 @@
 export type TypedResponse<TResponses extends Record<number, unknown>> = {
     [S in keyof TResponses & number]: {
-        readonly ok: `${S}` extends `2${string}` ? true : false;
+        readonly ok: `${S}` extends `4${string}` | `5${string}` ? false : true;
         readonly status: S;
         readonly statusText: string;
         readonly headers: Headers;
         readonly data: TResponses[S];
-        readonly error?: `${S}` extends `2${string}` ? never : TResponses[S];
     }
 }[keyof TResponses & number];
 
