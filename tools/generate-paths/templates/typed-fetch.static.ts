@@ -5,17 +5,9 @@ export type TypedResponse<TResponses extends Record<number, unknown>> = {
         readonly statusText: string;
         readonly headers: Headers;
         readonly data: TResponses[S];
+        readonly error?: `${S}` extends `2${string}` ? never : TResponses[S];
     }
 }[keyof TResponses & number];
-
-export type ErrorTypedResponse = {
-    readonly ok: false;
-    readonly status: 0;
-    readonly statusText: string;
-    readonly headers: Headers;
-    readonly data: undefined;
-    readonly error: string;
-};
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
 
@@ -76,7 +68,7 @@ export async function typedFetch<TResponses extends Record<number, unknown>, TBo
     body?: TBody,
     headers?: HeadersInit,
     options?: RequestOptions,
-): Promise<TypedResponse<TResponses> | ErrorTypedResponse> {
+): Promise<TypedResponse<TResponses>> {
     try {
         const res = await fetch(url, {
             method: method as string,
@@ -109,14 +101,8 @@ export async function typedFetch<TResponses extends Record<number, unknown>, TBo
             statusText: res.statusText,
             headers: res.headers,
             data: data,
-        } as unknown as TypedResponse<TResponses>;;
+        } as unknown as TypedResponse<TResponses>;
     } catch (e) {
-        return {
-            ok: false,
-            status: 0,
-            statusText: "",
-            headers: new Headers(),
-            error: e instanceof Error ? e.message : String(e),
-        } as unknown as ErrorTypedResponse;
+        throw e;
     }
 }
