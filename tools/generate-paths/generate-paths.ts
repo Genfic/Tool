@@ -1,11 +1,11 @@
 import { ensureDir } from "@std/fs";
-import { compact, uniq } from "@es-toolkit/es-toolkit";
+import { compact, uniq, camelCase, attemptAsync } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
-import { camelCase } from "@es-toolkit/es-toolkit";
 
 import type { ApiResponse, Parameter, Route, SwaggerResponse, Type } from "./types.ts";
+import { dirname, join } from "@std/path";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const eta = new Eta({
@@ -192,20 +192,25 @@ const buildResponseType = (response: ApiResponse): [string | undefined, boolean,
 	const schema = match(response.content)
 		.with(
 			{ "application/json": P.nonNullable },
-			(s) => s["application/json"].schema,
+			(s) => parseType(s["application/json"].schema),
 		)
 		.with(
 			{ "application/octet-stream": P.nonNullable },
-			(s) => s["application/octet-stream"].schema,
+			(s) => parseType(s["application/octet-stream"].schema),
 		)
-		.with({ "text/plain": P.nonNullable }, (s) => s["text/plain"].schema)
-		.otherwise(() => null);
+		.with({ "text/plain": P.nonNullable }, (s) => parseType(s["text/plain"].schema))
+		.with({ "text/event-stream": P.nonNullable }, (): [string, boolean] => ["ReadableStream<string>", true])
+		.with({ "application/jsonl": P.nonNullable }, (s) => {
+			const [t] = parseType(s["application/jsonl"].schema);
+			return [`ReadableStream<${t ?? "unknown"}>`, true] as [string, boolean];
+		})
+		.with({ "application/json-seq": P.nonNullable }, (s) => {
+			const [t] = parseType(s["application/json-seq"].schema);
+			return [`ReadableStream<${t ?? "unknown"}>`, true] as [string, boolean];
+		})
+		.otherwise(() => [undefined, true] as [undefined, boolean]);
 
-	if (!schema) {
-		return [undefined, true];
-	}
-
-	return parseType(schema);
+	return schema;
 };
 
 const buildFunction = (
@@ -286,13 +291,37 @@ const buildType = (name: string, component: Type): string | null => {
 
 const generate = async (
 	path: string,
+	cache: boolean
 ): Promise<{
 	paths: string[];
 	types: string[];
 	typeImports: string[];
 }> => {
-	const res = await fetch(path);
-	const data: SwaggerResponse = await res.json();
+	const cachePath = join(__dirname, ".cache", `${encodeURIComponent(path)}.json`);
+
+	const [err, res] = await attemptAsync(async () => await fetch(path));
+
+	let data: SwaggerResponse
+
+	if (err || !res) {
+		if (!cache) {
+			throw new Error(`Failed to fetch OpenAPI spec from ${path}: ${err}`);
+		}
+		try {
+			const cached = await Deno.readTextFile(cachePath);
+			data = JSON.parse(cached);
+			console.warn(`Using cached OpenAPI spec from ${cachePath}`);
+		} catch (cacheErr) {
+			throw new Error(`Failed to fetch OpenAPI spec from ${path} and no cache available: ${cacheErr}`);
+		}
+	} else {
+		data = await res.json();
+		if (cache) {
+			await ensureDir(dirname(cachePath));
+			await Deno.writeTextFile(cachePath, JSON.stringify(data));
+		}
+	}
+
 
 	const paths = [];
 	let typeImports: string[] = [];
@@ -337,6 +366,7 @@ export const generatePaths = async (
 	outDir: string,
 	paths: { key: string; value: string }[],
 	verbose: boolean,
+	cache: boolean,
 ) => {
 	VERBOSE = verbose;
 	await ensureDir(outDir);
@@ -344,7 +374,7 @@ export const generatePaths = async (
 		const start = Temporal.Now.instant();
 
 		console.log(`Generating paths for: ${key}`);
-		const { paths, types, typeImports } = await generate(value);
+		const { paths, types, typeImports } = await generate(value, cache);
 
 		const pathsFile = await eta.renderAsync("./paths-file", {
 			key,

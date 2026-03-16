@@ -8,7 +8,7 @@
     "jsr:@deno-library/compress@~0.5.6": "0.5.6",
     "jsr:@deno-library/crc32@1.0.2": "1.0.2",
     "jsr:@dewars/pattern@^5.1.2": "5.1.2",
-    "jsr:@es-toolkit/es-toolkit@^1.39.10": "1.39.10",
+    "jsr:@es-toolkit/es-toolkit@^1.45.1": "1.45.1",
     "jsr:@es-toolkit/es-toolkit@^1.8.0": "1.8.0",
     "jsr:@eta-dev/eta@^3.5.0": "3.5.0",
     "jsr:@std/bytes@^1.0.2": "1.0.5",
@@ -77,8 +77,8 @@
     "@es-toolkit/es-toolkit@1.8.0": {
       "integrity": "53dfb8ed4ad423221e3afabf9b99b796a0635df8e84491c0d3ff80bfe9b05ecf"
     },
-    "@es-toolkit/es-toolkit@1.39.10": {
-      "integrity": "8757072a13aa64b3b349ba2b9d7d22fbe7ea6f138506c6cd2222d767cd79918f"
+    "@es-toolkit/es-toolkit@1.45.1": {
+      "integrity": "fcfce61ab4ac4db2fd45841ac86f6101b271d4e3a094dc7edbb14fd41289471b"
     },
     "@eta-dev/eta@3.5.0": {
       "integrity": "6b70827efc14c7cbf08498ac7a922ecab003641caf3852a6cb5b1b12ee58fb37"
@@ -518,7 +518,7 @@
       "jsr:@cliffy/command@^1.0.0-rc.7",
       "jsr:@deno-library/compress@~0.5.6",
       "jsr:@dewars/pattern@^5.1.2",
-      "jsr:@es-toolkit/es-toolkit@^1.39.10",
+      "jsr:@es-toolkit/es-toolkit@^1.45.1",
       "jsr:@eta-dev/eta@^3.5.0",
       "jsr:@std/cli@^1.0.1",
       "jsr:@std/fmt@~0.225.6",

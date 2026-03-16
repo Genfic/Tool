@@ -34,8 +34,9 @@ await new Command()
 		collect: true,
 	})
 	.option("--verbose", "Verbose output")
+	.option("--cache", "Cache OpenAPI spec to a file")
 	.description("Generate paths")
-	.action(async ({ path, verbose }, out: string) => {
+	.action(async ({ path, verbose, cache }, out: string) => {
 		if (!path) {
 			throw new Error("No path provided");
 		}
@@ -46,6 +47,7 @@ await new Command()
 				Array.isArray(v) ? v.map((x: string) => ({ key: k, value: x })) : []
 			),
 			verbose ?? false,
+			cache ?? false,
 		);
 	})
 	.parse(Deno.args);
