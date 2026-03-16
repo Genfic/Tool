@@ -79,7 +79,7 @@ const buildParams = (parameters: Parameter[]): string[] => {
 
 		VERBOSE && console.log("Param", param, type, nullable);
 
-		if (!["path", "query", "querystring"].some((i) => i === param.in)) continue;
+		if (!["path", "query", "querystring"].includes(param.in)) continue;
 		const p = `${camelCase(param.name)}: ${replaceType(type)}${nullable ? " | null" : ""}`;
 		params.push(p);
 	}
@@ -89,7 +89,7 @@ const buildParams = (parameters: Parameter[]): string[] => {
 const buildQuery = (parameters: Parameter[]): string => {
 	const params = [];
 	for (const param of parameters) {
-		if (!["query", "querystring"].some((i) => i === param.in)) continue;
+		if (!["query", "querystring"].includes(param.in)) continue;
 		let p = camelCase(param.name);
 		p += "=${_enc(";
 		p += camelCase(param.name);
@@ -246,7 +246,11 @@ const buildFunction = (
 			type: t ?? "undefined",
 		});
 		if (!skipImport && t) {
-			importableTypes.add(t.replace("[]", ""));
+			for (const name of t.split(" | ").map((s) => s.replace("[]", "").trim())) {
+				if (!["null", "undefined", "never"].includes(name) && !/^"/.test(name)) {
+					importableTypes.add(name);
+				}
+			}
 		}
 	}
 
@@ -320,8 +324,7 @@ const generate = async (
 	return {
 		paths: paths.toSorted(),
 		types: types.toSorted(),
-		typeImports: uniq(typeImports)
-			.filter((ti) => !ti.endsWith("[]"))
+		typeImports: uniq(typeImports.map((ti) => ti.replace("[]", "")))
 			.toSorted(),
 	};
 };
