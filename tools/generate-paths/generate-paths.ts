@@ -79,7 +79,7 @@ const buildParams = (parameters: Parameter[]): string[] => {
 
 		VERBOSE && console.log("Param", param, type, nullable);
 
-		if (param.in !== "path" && param.in !== "query") continue;
+		if (!["path", "query", "querystring"].some((i) => i === param.in)) continue;
 		const p = `${camelCase(param.name)}: ${replaceType(type)}${nullable ? " | null" : ""}`;
 		params.push(p);
 	}
@@ -89,7 +89,7 @@ const buildParams = (parameters: Parameter[]): string[] => {
 const buildQuery = (parameters: Parameter[]): string => {
 	const params = [];
 	for (const param of parameters) {
-		if (param.in !== "query") continue;
+		if (!["query", "querystring"].some((i) => i === param.in)) continue;
 		let p = camelCase(param.name);
 		p += "=${_enc(";
 		p += camelCase(param.name);
@@ -198,6 +198,7 @@ const buildResponseType = (response: ApiResponse): [string | undefined, boolean,
 			{ "application/octet-stream": P.nonNullable },
 			(s) => s["application/octet-stream"].schema,
 		)
+		.with({ "text/plain": P.nonNullable }, (s) => s["text/plain"].schema)
 		.otherwise(() => null);
 
 	if (!schema) {

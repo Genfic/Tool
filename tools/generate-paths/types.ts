@@ -8,7 +8,7 @@ export interface SwaggerResponse {
 }
 
 export type Path = Record<
-	"get" | "put" | "post" | "delete" | "head" | "options",
+	"get" | "put" | "patch" | "post" | "delete" | "head" | "options" | "query" | "trace" | "connect",
 	Route
 >;
 
@@ -21,11 +21,17 @@ export interface Route {
 }
 
 export interface ApiResponse {
-	description: string;
+	description?: string;
 	content: Content;
 }
 
-export type ContentType = "application/json" | "application/octet-stream";
+export type ContentType =
+	| "application/json"
+	| "application/octet-stream"
+	| "text/plain"
+	| "text/event-stream"
+	| "application/jsonl"
+	| "application/json-seq";
 
 export type Content = {
 	[K in ContentType]: { [P in K]: { schema: Type } };
