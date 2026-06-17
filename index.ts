@@ -7,6 +7,7 @@ import stamp from "./stamp.txt" with { type: "text" };
 
 await new Command()
 	.command("info")
+	.description("Print build info")
 	.action(() => {
 		console.log(`Build time: ${stamp}`);
 	})
@@ -30,13 +31,13 @@ await new Command()
 	})
 	.command("generate-paths")
 	.arguments("<out:string>")
-	.option("--path.* [type:string]", "Path to the OpenAPI file", {
+	.option("-p, --path.* [type:string]", "Path to the OpenAPI file", {
 		collect: true,
 	})
-	.option("--verbose", "Verbose output")
-	.option("--cache", "Cache OpenAPI spec to a file")
+	.option("-v, --verbose", "Verbose output")
+	.option("-c, --cache", "Cache OpenAPI spec to a file")
 	.description("Generate paths")
-	.action(async ({ path, verbose, cache }, out: string) => {
+	.action(async ({ path, verbose, cache }: { path: Record<string, string>; verbose: boolean; cache: boolean }, out: string) => {
 		if (!path) {
 			throw new Error("No path provided");
 		}

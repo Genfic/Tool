@@ -4,13 +4,13 @@ env:
   DENO_TLS_CA_STORE: system
 
 tasks:
-  start: ./index.ts
+  start: deno ./index.ts
   release:
     cmds:
       - echo {{date "2006-01-02 15:04:05" now}} > stamp.txt
       - deno compile --include ./tools/generate-paths/templates --allow-net --allow-read --allow-write --output ./bin/ogma-tool index.ts
   install:
-    deps: [release]
+    deps: [ release ]
     cmds:
       - deno install --allow-net --allow-read --allow-write --force --global --name ogma-tool --config ./deno.jsonc index.ts
   bundlesize: deno run --allow-read ./index.ts bundle-size "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
