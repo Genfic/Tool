@@ -1,5 +1,5 @@
 import { ensureDir } from "@std/fs";
-import { compact, uniq, camelCase, attemptAsync } from "@es-toolkit/es-toolkit";
+import { attemptAsync, camelCase, compact, uniq } from "@es-toolkit/es-toolkit";
 import { Eta } from "@eta-dev/eta";
 import * as path from "@std/path";
 import { match, P } from "@dewars/pattern";
@@ -252,7 +252,7 @@ const buildFunction = (
 		});
 		if (!skipImport && t) {
 			for (const name of t.split(" | ").map((s) => s.replace("[]", "").trim())) {
-				if (!["null", "undefined", "never"].includes(name) && !/^"/.test(name)) {
+				if (!["null", "undefined", "never", "string", "bool", "number", "object", "array"].includes(name) && !/^"/.test(name)) {
 					importableTypes.add(name);
 				}
 			}
@@ -291,7 +291,7 @@ const buildType = (name: string, component: Type): string | null => {
 
 const generate = async (
 	path: string,
-	cache: boolean
+	cache: boolean,
 ): Promise<{
 	paths: string[];
 	types: string[];
@@ -301,7 +301,7 @@ const generate = async (
 
 	const [err, res] = await attemptAsync(async () => await fetch(path));
 
-	let data: SwaggerResponse
+	let data: SwaggerResponse;
 
 	if (err || !res) {
 		if (!cache) {
@@ -321,7 +321,6 @@ const generate = async (
 			await Deno.writeTextFile(cachePath, JSON.stringify(data));
 		}
 	}
-
 
 	const paths = [];
 	let typeImports: string[] = [];

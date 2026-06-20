@@ -37,7 +37,7 @@ await new Command()
 	.option("-v, --verbose", "Verbose output")
 	.option("-c, --cache", "Cache OpenAPI spec to a file")
 	.description("Generate paths")
-	.action(async ({ path, verbose, cache }: { path: Record<string, string>; verbose: boolean; cache: boolean }, out: string) => {
+	.action(async ({ path, verbose, cache }, out: string) => {
 		if (!path) {
 			throw new Error("No path provided");
 		}
