@@ -5,7 +5,15 @@ edition = "2024"
 rust-version = "1.85"
 description = "Rust rewrite of the Ogma3 Deno build tools"
 license = "MIT"
+repository = "https://github.com/Genfic/Tool"
 publish = false
+
+# Make `cargo binstall` (and `cargo binstall --git`) find the GitHub release
+# assets produced by `.github/workflows/release.yml`. Assets are bare binaries
+# named `ogma-tool-<target>[.exe]`.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/ogma-tool-{ target }{ binary-ext }"
+pkg-fmt = "bin"
 
 [[bin]]
 name = "ogma-tool"

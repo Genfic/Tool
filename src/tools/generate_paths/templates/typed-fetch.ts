@@ -68,42 +68,38 @@ export async function typedFetch<TResponses extends Record<number, unknown>, TBo
     headers?: HeadersInit,
     options?: RequestOptions,
 ): Promise<TypedResponse<TResponses>> {
-    try {
-        const res = await fetch(url, {
-            method: method as string,
-            headers: {
-                "content-type": "application/json",
-                ...headers,
-            },
-            body: body && JSON.stringify(body),
-            ...options,
-        } as RequestInit);
+  const res = await fetch(url, {
+      method: method as string,
+      headers: {
+          "content-type": "application/json",
+          ...headers,
+      },
+      body: body && JSON.stringify(body),
+      ...options,
+  } as RequestInit);
 
-        const contentType = res.headers.get("Content-Type")?.toLowerCase() ?? "";
+  const contentType = res.headers.get("Content-Type")?.toLowerCase() ?? "";
 
-        let data: unknown;
+  let data: unknown;
 
-        if (options?.responseType) {
-            data = await res[options.responseType]();
-        } else if (contentType.includes("application/json")) {
-            const text = await res.text();
-            data = DateSafeJsonParse(text);
-        } else if (/^(application|image|audio|video)\//.test(contentType)) {
-            data = await res.blob();
-        } else if (contentType) {
-            data = await res.text();
-        } else {
-            data = null;
-        }
+  if (options?.responseType) {
+      data = await res[options.responseType]();
+  } else if (contentType.includes("application/json")) {
+      const text = await res.text();
+      data = DateSafeJsonParse(text);
+  } else if (/^(application|image|audio|video)\//.test(contentType)) {
+      data = await res.blob();
+  } else if (contentType) {
+      data = await res.text();
+  } else {
+      data = null;
+  }
 
-        return {
-            ok: res.ok,
-            status: res.status,
-            statusText: res.statusText,
-            headers: res.headers,
-            data: data,
-        } as unknown as TypedResponse<TResponses>;
-    } catch (e) {
-        throw e;
-    }
+  return {
+      ok: res.ok,
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+      data: data,
+  } as unknown as TypedResponse<TResponses>;
 }

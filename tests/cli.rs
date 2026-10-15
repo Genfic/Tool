@@ -40,12 +40,13 @@ fn write(path: &Path, contents: &str) {
 }
 
 #[test]
-fn info_prints_the_build_stamp() {
+fn info_prints_build_info() {
     let output = run(&["info"]);
     let stdout = stdout_of(&output);
-    // The embedded stamp mirrors `stamp.txt`, including its trailing CRLF, and
-    // `println!` adds the final newline (like `console.log`).
-    assert_eq!(stdout.trim_end(), "Build time: 2026-06-20 21:21:34");
+    // Build info is embedded by `build.rs`: `ogma-tool <version> (<timestamp> ...)`.
+    assert!(stdout.starts_with("ogma-tool "));
+    assert!(stdout.contains('('));
+    assert!(stdout.contains(')'));
 }
 
 #[test]

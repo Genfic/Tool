@@ -1,8 +1,5 @@
 version: "3"
 
-env:
-  DENO_TLS_CA_STORE: system
-
 tasks:
   start: cargo run --
   build: cargo build --release
@@ -11,12 +8,10 @@ tasks:
   clippy: cargo clippy --all-targets --all-features -- -D warnings
   fmt: cargo fmt --all -- --check
   fmt-fix: cargo fmt --all
-  release:
-    cmds:
-      - echo {{date "2006-01-02 15:04:05" now}} > stamp.txt
-      - cargo build --release
+  release: cargo build --release
   install:
-    deps: [release]
+    deps:
+      - release
     cmds:
       - cargo install --force --path .
   bundlesize: cargo run --release -- bundle-size "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\js\\dist\\**\\*.js" "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\js\\bundle\\**\\*.js"

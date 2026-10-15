@@ -22,10 +22,9 @@ use ogma_tools::tools::generate_imports::generate_imports;
 use ogma_tools::tools::generate_paths::generate_paths;
 use ogma_tools::tools::generate_preloads::generate_preloads;
 
-/// Build stamp embedded at compile time, equivalent to reading `stamp.txt` with
-/// `import stamp from "./stamp.txt" with { type: "text" }`. The checked-in file
-/// contains a trailing CRLF.
-const STAMP: &str = include_str!("../stamp.txt");
+/// Build info embedded at compile time by `build.rs` (`BUILD_INFO`), replacing
+/// the former checked-in `stamp.txt`.
+const BUILD_INFO: &str = env!("BUILD_INFO");
 
 #[derive(Parser)]
 #[command(name = "ogma-tool", version, about = "Ogma3 build tools")]
@@ -97,7 +96,11 @@ fn main() {
 fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Info => {
-            println!("Build time: {STAMP}");
+            println!(
+                "{} {} ({BUILD_INFO})",
+                env!("CARGO_BIN_NAME"),
+                env!("CARGO_PKG_VERSION")
+            );
             Ok(())
         }
         Command::BundleSize { paths } => bundle_size(&paths),
