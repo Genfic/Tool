@@ -1,9 +1,9 @@
 //! Port of `tools/generate-paths/generate-paths.ts`.
 //!
 //! The generated TypeScript must match the Deno tool byte-for-byte, so the
-//! control flow mirrors the original closely (including its quirks, such as
-//! `replaceType` mapping `bool` — but not `boolean` — and the left-to-right
-//! order of the schema match chain).
+//! control flow mirrors the original closely (including its quirks, such as the
+//! left-to-right order of the schema match chain and JavaScript's enumeration
+//! order for integer-like object keys).
 
 pub mod render;
 pub mod types;
@@ -15,6 +15,7 @@ use std::sync::LazyLock;
 use std::time::Instant;
 
 use anyhow::{Context, Result, bail};
+use indexmap::IndexMap;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
@@ -24,30 +25,14 @@ use self::types::{ApiResponse, Parameter, Route, SwaggerResponse, Type, TypeKind
 use crate::helpers::js::{camel_case, encode_uri_component, js_to_string, locale_compare};
 
 /// The static `typed-fetch.ts` runtime, copied verbatim.
-pub const TYPED_FETCH: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tools/generate-paths/templates/typed-fetch.static.ts"
-));
+pub const TYPED_FETCH: &str = include_str!("templates/typed-fetch.ts");
 
 /// `\{.+?\}` from the URL rewriting step.
 static URL_GROUP: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\{(.+?)\}").expect("valid regex"));
 
-/// Maps a primitive OpenAPI type name to its TypeScript equivalent — the
-/// `replaceType` table used by `buildParams`.
-fn replace_type(ty: &str) -> &'static str {
-    match ty {
-        "integer" | "decimal" | "double" | "float" => "number",
-        "bool" => "boolean",
-        "string" => "string",
-        "date" => "Date",
-        _ => "unknown",
-    }
-}
-
-/// The `typeMappings` table used *inside* `parseType`. This is deliberately
-/// different from [`replace_type`]: `parseType` leaves unknown type names as-is
-/// (so `boolean` stays `boolean`), whereas `buildParams` maps them to `unknown`.
+/// The `typeMappings` table used *inside* `parseType`. Unknown type names are
+/// left as-is (so `boolean` stays `boolean`, while `integer` becomes `number`).
 fn map_parsed_type(ty: &str) -> &str {
     match ty {
         "integer" => "number",
@@ -56,6 +41,61 @@ fn map_parsed_type(ty: &str) -> &str {
         "array" => "object[]",
         _ => ty,
     }
+}
+
+/// Port of `isImportableType`.
+fn is_importable_type(name: &str) -> bool {
+    ![
+        "null",
+        "undefined",
+        "unknown",
+        "never",
+        "void",
+        "string",
+        "bool",
+        "boolean",
+        "number",
+        "object",
+        "array",
+    ]
+    .contains(&name)
+        && !name.starts_with('"')
+}
+
+/// Returns the key if it is a valid ECMAScript array index (`ToString(ToUint32(key)) == key`
+/// and `ToUint32(key) != 2^32 - 1`), which JavaScript enumerates in ascending
+/// numeric order ahead of string keys.
+fn js_array_index(key: &str) -> Option<u64> {
+    if key.is_empty() || (key.len() > 1 && key.starts_with('0')) {
+        return None;
+    }
+    if !key.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    let value: u64 = key.parse().ok()?;
+    if value >= 0xFFFF_FFFF {
+        return None;
+    }
+    Some(value)
+}
+
+/// JavaScript object key enumeration order: integer-like keys in ascending
+/// numeric order first, then the remaining keys in insertion order.
+fn js_object_keys<V>(map: &IndexMap<String, V>) -> Vec<String> {
+    let mut numeric: Vec<(u64, String)> = Vec::new();
+    let mut others: Vec<String> = Vec::new();
+    for key in map.keys() {
+        match js_array_index(key) {
+            Some(index) => numeric.push((index, key.clone())),
+            None => others.push(key.clone()),
+        }
+    }
+    numeric.sort_by_key(|(index, _)| *index);
+    numeric
+        .into_iter()
+        .map(|(_, key)| key)
+        .chain(others)
+        .collect()
 }
 
 /// Port of `getTypeActual`.
@@ -166,12 +206,13 @@ fn parse_type(schema: &Type, verbose: bool) -> (String, bool) {
         skip_import = false;
     } else if let Some(properties) = &schema.properties {
         let mut owned: Vec<(String, String, Option<String>)> = Vec::new();
-        for (name, value) in properties {
+        for name in js_object_keys(properties) {
+            let value = &properties[&name];
             let (parsed, _) = parse_type(value, verbose);
             if parsed.is_empty() {
                 continue;
             }
-            owned.push((name.clone(), parsed, value.description.clone()));
+            owned.push((name, parsed, value.description.clone()));
         }
         let props: Vec<TypeProperty<'_>> = owned
             .iter()
@@ -225,35 +266,72 @@ fn parse_type(schema: &Type, verbose: bool) -> (String, bool) {
     (unique.join(" | "), skip_import)
 }
 
-/// Builds the parameter list for a function signature (`buildParams`).
-fn build_params(parameters: &[Parameter], current_function: &str, verbose: bool) -> Vec<String> {
+/// Builds the parameter list for a function signature (`buildParams`). Returns
+/// the rendered parameters and the type names referenced by `$ref` parameters
+/// that must be imported.
+fn build_params(
+    parameters: &[Parameter],
+    current_function: &str,
+    verbose: bool,
+) -> (Vec<String>, Vec<String>) {
     if verbose {
         println!("Building params for {current_function}");
     }
 
     let mut params = Vec::new();
+    let mut type_imports: Vec<String> = Vec::new();
+
     for parameter in parameters {
-        let (ty, _) = get_type_actual(&parameter.schema, verbose);
-        let nullable = !parameter.required.unwrap_or(false);
-
-        if verbose {
-            println!("Param {} {} {}", json(parameter), ty, nullable);
-        }
-
         if !matches!(
             parameter.location.as_str(),
             "path" | "query" | "querystring"
         ) {
             continue;
         }
+
+        // `parseType` rather than `getTypeActual`, so `$ref` params come out as
+        // the name of the type they refer to instead of an unresolvable
+        // `unknown`.
+        let (parsed, skip_import) = parse_type(&parameter.schema, verbose);
+        let parsed = if parsed.is_empty() {
+            "unknown".to_string()
+        } else {
+            parsed
+        };
+        let mut types: Vec<String> = parsed.split(" | ").map(str::to_string).collect();
+        let nullable = !parameter.required.unwrap_or(false);
+
+        if verbose {
+            println!("Param {} {:?} {}", json(parameter), types, nullable);
+        }
+
+        if nullable && !types.iter().any(|ty| ty == "null") {
+            types.push("null".to_string());
+            types.sort_by(|a, b| match (a == "null", b == "null") {
+                (true, true) => std::cmp::Ordering::Equal,
+                (true, false) => std::cmp::Ordering::Greater,
+                (false, true) => std::cmp::Ordering::Less,
+                (false, false) => locale_compare(a, b),
+            });
+        }
+
         params.push(format!(
-            "{}: {}{}",
+            "{}: {}",
             camel_case(&parameter.name),
-            replace_type(&ty),
-            if nullable { " | null" } else { "" }
+            types.join(" | ")
         ));
+
+        if !skip_import {
+            for ty in &types {
+                let ty = ty.trim();
+                if is_importable_type(ty) {
+                    type_imports.push(ty.to_string());
+                }
+            }
+        }
     }
-    params
+
+    (params, type_imports)
 }
 
 /// Builds the query string fragment (`buildQuery`).
@@ -264,7 +342,14 @@ fn build_query(parameters: &[Parameter]) -> String {
             continue;
         }
         let name = camel_case(&parameter.name);
-        params.push(format!("{name}=${{_enc({name})}}"));
+        // An optional param is sent empty rather than as the literal strings
+        // "null"/"undefined", which the model binder would reject.
+        let value = if parameter.required.unwrap_or(false) {
+            name.clone()
+        } else {
+            format!("{name} ?? \"\"")
+        };
+        params.push(format!("{name}=${{_enc({value})}}"));
     }
     if params.is_empty() {
         String::new()
@@ -347,10 +432,11 @@ fn build_function(path: &str, method: &str, meta: &Route, verbose: bool) -> Func
         println!("Building function for {} {}", id, json(meta));
     }
 
-    let params = meta
+    let (params, mut response_types) = meta
         .parameters
         .as_ref()
-        .map(|p| build_params(p, &id, verbose));
+        .map(|p| build_params(p, &id, verbose))
+        .unwrap_or_default();
     let url = transform_url(path);
     let query = meta
         .parameters
@@ -374,35 +460,22 @@ fn build_function(path: &str, method: &str, meta: &Route, verbose: bool) -> Func
     let is_not_empty = body_type.as_deref().is_some_and(|ty| !ty.is_empty());
 
     let mut response_type_map: Vec<(String, String)> = Vec::new();
-    let mut response_types: Vec<String> = Vec::new();
-    for (status, response) in &meta.responses {
+    for status in js_object_keys(&meta.responses) {
+        let response = &meta.responses[&status];
         let (ty, skip_import) = build_response_type(response, verbose);
         response_type_map.push((
-            status.clone(),
+            status,
             ty.clone().unwrap_or_else(|| "undefined".to_string()),
         ));
         if !skip_import
             && let Some(ty) = &ty
             && !ty.is_empty()
         {
-            for name in ty
-                .split(" | ")
-                .map(|part| part.replacen("[]", "", 1).trim().to_string())
-            {
-                if ![
-                    "null",
-                    "undefined",
-                    "never",
-                    "string",
-                    "bool",
-                    "number",
-                    "object",
-                    "array",
-                ]
-                .contains(&name.as_str())
-                    && !name.starts_with('"')
-                {
-                    response_types.push(name);
+            for part in ty.split(" | ") {
+                let name = part.replacen("[]", "", 1);
+                let name = name.trim();
+                if is_importable_type(name) {
+                    response_types.push(name.to_string());
                 }
             }
         }
@@ -421,7 +494,7 @@ fn build_function(path: &str, method: &str, meta: &Route, verbose: bool) -> Func
 
     let func = render_function(&FunctionView {
         id: &id,
-        params: params.as_deref(),
+        params: Some(params.as_slice()),
         response_type_map: &response_type_map,
         quote,
         url: &url,

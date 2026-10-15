@@ -89,13 +89,13 @@ fn renders_a_paths_file() {
         "\nexport const b = () => {};".to_string(),
     ];
     let rendered = render_paths_file("public", &imports, &paths);
-    let expected = "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n\tFoo,\n\tBar,\n} from './types-public';\nconst _enc = <T>(p: T): T extends string ? string : T => (typeof p === 'string' ? encodeURIComponent(p) : p) as any;\n\n\nexport const a = () => {};\n\nexport const b = () => {};\n";
+    let expected = "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n\tFoo,\n\tBar,\n} from './types-public';\nconst _enc = (p: string | number | boolean | Date | null | undefined): string => {\n\tif (p === null || p === undefined) return \"\";\n\tif (p instanceof Date) return encodeURIComponent(p.toISOString());\n\treturn encodeURIComponent(typeof p === \"string\" ? p : String(p));\n};\n\n\nexport const a = () => {};\n\nexport const b = () => {};\n";
     assert_eq!(rendered, expected);
 }
 
 #[test]
 fn renders_a_paths_file_without_imports() {
     let rendered = render_paths_file("private", &[], &[]);
-    let expected = "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n} from './types-private';\nconst _enc = <T>(p: T): T extends string ? string : T => (typeof p === 'string' ? encodeURIComponent(p) : p) as any;\n\n";
+    let expected = "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n} from './types-private';\nconst _enc = (p: string | number | boolean | Date | null | undefined): string => {\n\tif (p === null || p === undefined) return \"\";\n\tif (p instanceof Date) return encodeURIComponent(p.toISOString());\n\treturn encodeURIComponent(typeof p === \"string\" ? p : String(p));\n};\n\n";
     assert_eq!(rendered, expected);
 }

@@ -5,19 +5,6 @@ fn schema(json: &str) -> Type {
 }
 
 #[test]
-fn replace_type_matches_the_original_table() {
-    assert_eq!(replace_type("integer"), "number");
-    assert_eq!(replace_type("decimal"), "number");
-    assert_eq!(replace_type("double"), "number");
-    assert_eq!(replace_type("float"), "number");
-    assert_eq!(replace_type("bool"), "boolean");
-    assert_eq!(replace_type("string"), "string");
-    assert_eq!(replace_type("date"), "Date");
-    // The original does not map "boolean" (only "bool").
-    assert_eq!(replace_type("boolean"), "unknown");
-}
-
-#[test]
 fn map_parsed_type_matches_the_original_mapping() {
     assert_eq!(map_parsed_type("integer"), "number");
     assert_eq!(map_parsed_type("date"), "Date");
@@ -121,13 +108,19 @@ fn transforms_urls_and_queries() {
             schema: schema(r#"{"type":"string"}"#),
         },
     ];
-    assert_eq!(build_query(&params), "?searchTerm=${_enc(searchTerm)}");
+    assert_eq!(
+        build_query(&params),
+        "?searchTerm=${_enc(searchTerm ?? \"\")}"
+    );
     assert_eq!(
         build_params(&params, "f", false),
-        vec![
-            "itemId: number".to_string(),
-            "searchTerm: string | null".to_string()
-        ]
+        (
+            vec![
+                "itemId: number".to_string(),
+                "searchTerm: string | null".to_string()
+            ],
+            vec![]
+        )
     );
 }
 

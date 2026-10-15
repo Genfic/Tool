@@ -7,7 +7,17 @@
 - README updated with Rust usage and documented differences.
 - `.gitignore` updated to include `/target/`.
 - Git status: modified `.gitignore`, `README.md`; untracked `AGENTS.md`, `Cargo.lock`, `Cargo.toml`, `opencode.jsonc`, `run.ps1`, `src/`, `tests/` (all Rust work). `stamp.txt` unchanged.
-- Templates: `typed-fetch.static.ts` is present under `tools/generate-paths/templates/` (referenced via `CARGO_MANIFEST_DIR` in include_str!).
+
+## Productionization progress (4 steps)
+- Step 1 (done): tests moved to sibling `tests.rs` submodule files under `src/**` and `src/tests.rs`; all 54 pass.
+- Step 2 (done): `taskfile.yml` rewritten with Cargo tasks (`start`/`build`/`test`/`check`/`clippy`/`fmt`/`fmt-fix`/`release`/`install` + tool tasks).
+- Step 3 (done): removed Deno sources/config (`deno.jsonc`, `deno.lock`, `index.ts`, `helpers/`, `tools/`, `out/`, `bin/`, `node_modules/`).
+- Step 4 (done): templates moved to files and rendered with `minijinja` + `minijinja-embed`.
+  - `build.rs` embeds only `src/tools/generate_paths/templates/*.jinja` via `embed_templates!`; `render.rs` loads them with `load_templates!`.
+  - Templates: `function.jinja`, `type.jinja`, `paths-file.jinja`. `typed-fetch.ts` stays a static asset loaded via `include_str!` (path updated from `tools/...`).
+  - Whitespace note: MiniJinja `-%}`/`{%-` strips *all* whitespace (spaces/tabs), so indentation is emitted via `{{ indent }}`/`{{ tab }}` variables.
+  - `render.rs` keeps `#[cfg(test)] mod tests;` so the 6 render tests still compile.
+  - Old Deno `tools/` directory removed.
 
 ## Key decisions
 - Switched `flate2` to `zlib-rs` backend for byte-identical gzip vs Deno/node:zlib (deflateRaw).
@@ -28,4 +38,6 @@
 
 ## Ready
 - Working tree contains complete, testable Rust implementation; no git commits made (human commits from host as instructed).
-- All checks green. Ready to proceed if/when OpenAPI access is approved.
+- All checks green (48 -> 54 tests restored after step 4 added `#[cfg(test)] mod tests;`).
+- Templates now live in `src/tools/generate_paths/templates/` and are embedded via `minijinja`/`minijinja-embed`.
+- Ready to proceed if/when OpenAPI access is approved.

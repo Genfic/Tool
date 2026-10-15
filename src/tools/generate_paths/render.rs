@@ -1,13 +1,22 @@
-//! Hand written equivalents of the three Eta templates in
-//! `tools/generate-paths/templates`.
+//! Jinja-based rendering of the generated TypeScript files.
 //!
-//! Eta is configured with `autoTrim: [false, "nl"]` by default, which strips
-//! one newline after every closing tag (and the templates themselves are CRLF,
-//! with Eta normalising emitted text to LF). The functions below reproduce the
-//! exact resulting bytes, including the leading newline of a rendered function
-//! and the absence of a trailing newline.
+//! The `.jinja` templates live in `templates/` and are embedded into the binary
+//! at compile time by `build.rs` using `minijinja-embed`.
 
-/// Input for [`render_function`], mirroring the `function.eta` view model.
+use std::collections::HashMap;
+
+use minijinja::{Environment, Value};
+
+/// A single property of an inline object type (`type.jinja`).
+#[derive(Clone, Debug)]
+pub struct TypeProperty<'a> {
+    pub name: &'a str,
+    pub ty: &'a str,
+    pub description: Option<&'a str>,
+}
+
+/// Data for `function.jinja`.
+#[derive(Clone, Debug)]
 pub struct FunctionView<'a> {
     pub id: &'a str,
     pub params: Option<&'a [String]>,
@@ -20,79 +29,84 @@ pub struct FunctionView<'a> {
     pub is_not_empty: bool,
 }
 
-/// A single property of an inline object type (`type.eta`).
-pub struct TypeProperty<'a> {
-    pub name: &'a str,
-    pub ty: &'a str,
-    pub description: Option<&'a str>,
+/// Builds a MiniJinja environment with the embedded templates loaded.
+fn environment() -> Environment<'static> {
+    let mut env = Environment::new();
+    minijinja_embed::load_templates!(&mut env);
+    env
 }
 
-/// Renders `function.eta`.
+/// Renders `function.jinja`.
 pub fn render_function(view: &FunctionView<'_>) -> String {
-    let body = match (view.body_type, view.is_not_empty) {
-        (Some(body_type), true) => format!("body: {body_type}, "),
-        _ => String::new(),
-    };
-    let params = view.params.map(|p| p.join(", ")).unwrap_or_default();
-    let trailing = match view.params {
-        Some(p) if !p.is_empty() => ", ",
-        _ => "",
-    };
-    let responses = view
-        .response_type_map
-        .iter()
-        .map(|(status, ty)| format!("{status}: {ty}"))
-        .collect::<Vec<_>>()
-        .join("; ");
-    let body_type = view.body_type.unwrap_or("undefined");
-    let body_argument = if view.is_not_empty && !body_type.is_empty() {
+    let env = environment();
+    let template = env
+        .get_template("function.jinja")
+        .expect("function.jinja is embedded");
+
+    let body_type_str = view.body_type.unwrap_or("undefined");
+    let body_argument = if view.is_not_empty && !body_type_str.is_empty() {
         "body"
     } else {
         "undefined"
     };
-    let method = view.method.to_uppercase();
-    let quote = view.quote;
-    let url = view.url;
-    let query = view.query;
+    let params: Vec<String> = view.params.map(<[String]>::to_vec).unwrap_or_default();
+    let response_type_map: Vec<(String, String)> = view.response_type_map.to_vec();
 
-    format!(
-        "\nexport const {id} = async ({body}{params}{trailing}headers?: HeadersInit, options?: RequestInit) => await typedFetch<{{ {responses} }}, {body_type}>({quote}{url}{query}{quote},\n    {method},\n    {body_argument},\n    headers,\n    options,\n);",
-        id = view.id,
-    )
+    template
+        .render(minijinja::context! {
+            id => view.id,
+            params => params,
+            response_type_map => response_type_map,
+            quote => view.quote,
+            url => view.url,
+            query => view.query,
+            method => view.method,
+            body_type_str => body_type_str,
+            body_argument => body_argument,
+            is_not_empty => view.is_not_empty,
+        })
+        .expect("function.jinja renders")
 }
 
-/// Renders `type.eta`.
+/// Renders `type.jinja`.
 pub fn render_type(properties: &[TypeProperty<'_>]) -> String {
-    let mut out = String::from("{\n");
-    for property in properties {
-        if let Some(description) = property.description
-            && !description.is_empty()
-        {
-            out.push_str(&format!("    /** {description} */\n"));
-        }
-        out.push_str(&format!("    {}: {};\n", property.name, property.ty));
-    }
-    out.push('}');
-    out
+    let env = environment();
+    let template = env
+        .get_template("type.jinja")
+        .expect("type.jinja is embedded");
+
+    let properties: Vec<Value> = properties
+        .iter()
+        .map(|property| {
+            let mut object = HashMap::new();
+            object.insert("name", Value::from(property.name));
+            object.insert("ty", Value::from(property.ty));
+            if let Some(description) = property.description {
+                object.insert("description", Value::from(description));
+            }
+            Value::from_object(object)
+        })
+        .collect();
+
+    template
+        .render(minijinja::context!(properties => properties))
+        .expect("type.jinja renders")
 }
 
-/// Renders `paths-file.eta`.
+/// Renders `paths-file.jinja`.
 pub fn render_paths_file(key: &str, type_imports: &[String], paths: &[String]) -> String {
-    let mut out = String::from(
-        "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n",
-    );
-    for imported in type_imports {
-        out.push_str(&format!("\t{imported},\n"));
-    }
-    out.push_str(&format!(
-        "}} from './types-{key}';\nconst _enc = <T>(p: T): T extends string ? string : T => (typeof p === 'string' ? encodeURIComponent(p) : p) as any;\n\n"
-    ));
-    for path in paths {
-        out.push_str(path);
-        // The `paths-file` template emits one `\n` after every path block.
-        out.push('\n');
-    }
-    out
+    let env = environment();
+    let template = env
+        .get_template("paths-file.jinja")
+        .expect("paths-file.jinja is embedded");
+
+    template
+        .render(minijinja::context! {
+            key => key,
+            type_imports => type_imports.to_vec(),
+            paths => paths.to_vec(),
+        })
+        .expect("paths-file.jinja renders")
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ This task runs in `/RustProjects/ogma3-tools`, which is a **host-created Git wor
 Two OpenAPI schemas are available through environment variables:
 
 - `OPENAPI_PUBLIC_URL`: the public API schema.
-- `OPENAPI_PRIVATE_URL`: the private API schema.
+- `OPENAPI_INTERNAL_URL`: the private API schema.
 
 Both URLs point to the host's local ASP.NET Core server. Access them through the provided environment variables rather than hardcoding URLs.
 
@@ -33,7 +33,7 @@ If either schema is unavailable, report the failure explicitly rather than silen
 
 ## OpenAPI schema endpoint
 
-The host serves the OpenAPI schema at the URL in `OPENAPI|[PUBLIC|PRIVATE]_URL`.
+The host serves the OpenAPI schema at the URL in `OPENAPI_[PUBLIC|INTERNAL]_URL`.
 
 - From inside Docker Sandbox, use `host.docker.internal` for a host service. Do not use `localhost` or `127.0.0.1` in the URL inside the sandbox.
 - Fetch the schema using an HTTP GET and inspect its response and OpenAPI version. For example:
