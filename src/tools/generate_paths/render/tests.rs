@@ -99,3 +99,40 @@ fn renders_a_paths_file_without_imports() {
     let expected = "import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from \"./typed-fetch\";\nimport type {\n} from './types-private';\nconst _enc = (p: string | number | boolean | Date | null | undefined): string => {\n\tif (p === null || p === undefined) return \"\";\n\tif (p instanceof Date) return encodeURIComponent(p.toISOString());\n\treturn encodeURIComponent(typeof p === \"string\" ? p : String(p));\n};\n\n";
     assert_eq!(rendered, expected);
 }
+
+#[test]
+fn normalises_crlf_to_lf() {
+    assert_eq!(
+        super::normalize_newlines("a\r\nb\r\n".to_string()),
+        "a\nb\n"
+    );
+    assert_eq!(super::normalize_newlines("a\nb".to_string()), "a\nb");
+    assert_eq!(super::normalize_newlines(String::new()), "");
+}
+
+#[test]
+fn rendered_output_never_contains_carriage_returns() {
+    // A Windows checkout may surface the embedded templates with CRLF; the
+    // generated TypeScript must still use LF (matching the Eta implementation).
+    let properties = vec![TypeProperty {
+        name: "id",
+        ty: "number",
+        description: Some("The id"),
+    }];
+    assert!(!render_type(&properties).contains('\r'));
+
+    let rendered = render_function(&FunctionView {
+        id: "getFoo",
+        params: None,
+        response_type_map: &[("200".to_string(), "Foo".to_string())],
+        quote: "\"",
+        url: "https://example.test/api/foo",
+        query: "",
+        method: "get",
+        body_type: None,
+        is_not_empty: false,
+    });
+    assert!(!rendered.contains('\r'));
+
+    assert!(!render_paths_file("public", &[], &[]).contains('\r'));
+}

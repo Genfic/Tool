@@ -36,6 +36,21 @@ fn environment() -> Environment<'static> {
     env
 }
 
+/// Normalises `\r\n` line endings to `\n`.
+///
+/// The templates are embedded straight from disk, so a Windows checkout can
+/// surface them with CRLF even though they are stored with LF. The original
+/// Eta templates normalised line endings to LF when rendering; MiniJinja
+/// preserves them verbatim, so normalise the rendered output to keep the
+/// generated TypeScript byte-identical on every platform.
+fn normalize_newlines(rendered: String) -> String {
+    if rendered.contains('\r') {
+        rendered.replace("\r\n", "\n")
+    } else {
+        rendered
+    }
+}
+
 /// Renders `function.jinja`.
 pub fn render_function(view: &FunctionView<'_>) -> String {
     let env = environment();
@@ -52,20 +67,22 @@ pub fn render_function(view: &FunctionView<'_>) -> String {
     let params: Vec<String> = view.params.map(<[String]>::to_vec).unwrap_or_default();
     let response_type_map: Vec<(String, String)> = view.response_type_map.to_vec();
 
-    template
-        .render(minijinja::context! {
-            id => view.id,
-            params => params,
-            response_type_map => response_type_map,
-            quote => view.quote,
-            url => view.url,
-            query => view.query,
-            method => view.method,
-            body_type_str => body_type_str,
-            body_argument => body_argument,
-            is_not_empty => view.is_not_empty,
-        })
-        .expect("function.jinja renders")
+    normalize_newlines(
+        template
+            .render(minijinja::context! {
+                id => view.id,
+                params => params,
+                response_type_map => response_type_map,
+                quote => view.quote,
+                url => view.url,
+                query => view.query,
+                method => view.method,
+                body_type_str => body_type_str,
+                body_argument => body_argument,
+                is_not_empty => view.is_not_empty,
+            })
+            .expect("function.jinja renders"),
+    )
 }
 
 /// Renders `type.jinja`.
@@ -88,9 +105,11 @@ pub fn render_type(properties: &[TypeProperty<'_>]) -> String {
         })
         .collect();
 
-    template
-        .render(minijinja::context!(properties => properties))
-        .expect("type.jinja renders")
+    normalize_newlines(
+        template
+            .render(minijinja::context!(properties => properties))
+            .expect("type.jinja renders"),
+    )
 }
 
 /// Renders `paths-file.jinja`.
@@ -100,13 +119,15 @@ pub fn render_paths_file(key: &str, type_imports: &[String], paths: &[String]) -
         .get_template("paths-file.jinja")
         .expect("paths-file.jinja is embedded");
 
-    template
-        .render(minijinja::context! {
-            key => key,
-            type_imports => type_imports.to_vec(),
-            paths => paths.to_vec(),
-        })
-        .expect("paths-file.jinja renders")
+    normalize_newlines(
+        template
+            .render(minijinja::context! {
+                key => key,
+                type_imports => type_imports.to_vec(),
+                paths => paths.to_vec(),
+            })
+            .expect("paths-file.jinja renders"),
+    )
 }
 
 #[cfg(test)]
