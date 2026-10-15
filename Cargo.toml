@@ -1,0 +1,35 @@
+[package]
+name = "ogma-tools"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Rust rewrite of the Ogma3 Deno build tools"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "ogma-tool"
+path = "src/main.rs"
+
+[lib]
+name = "ogma_tools"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+indexmap = { version = "2", features = ["serde"] }
+ureq = { version = "3", features = ["json"] }
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+brotli = "8"
+zstd = "0.13"
+glob = "0.3"
+regex = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
