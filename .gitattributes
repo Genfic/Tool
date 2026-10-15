@@ -1,0 +1,11 @@
+# Keep the files that are embedded into the binary at compile time -- and the
+# Rust sources checked by `cargo fmt` -- in LF on every platform.
+#
+# The Jinja templates and the static `typed-fetch.ts` asset are read from disk
+# by `build.rs` / `include_str!`, and the generated TypeScript must be
+# byte-identical regardless of the checkout. A Windows checkout (core.autocrlf)
+# would otherwise embed CRLF into those files. `cargo fmt --check` likewise
+# expects LF.
+*.jinja text eol=lf
+*.ts text eol=lf
+*.rs text eol=lf

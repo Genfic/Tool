@@ -1,0 +1,16 @@
+{%- set tab = "\t" -%}
+import { DELETE, GET, HEAD, PATCH, POST, PUT, typedFetch } from "./typed-fetch";
+import type {
+{% for imported in type_imports -%}
+{{ tab }}{{ imported }},
+{% endfor -%}
+} from './types-{{ key }}';
+const _enc = (p: string | number | boolean | Date | null | undefined): string => {
+	if (p === null || p === undefined) return "";
+	if (p instanceof Date) return encodeURIComponent(p.toISOString());
+	return encodeURIComponent(typeof p === "string" ? p : String(p));
+};
+
+{% for path in paths -%}
+{{ path }}
+{% endfor -%}

@@ -1,19 +1,20 @@
 version: "3"
 
-env:
-  DENO_TLS_CA_STORE: system
-
 tasks:
-  start: deno ./index.ts
-  release:
-    cmds:
-      - echo {{date "2006-01-02 15:04:05" now}} > stamp.txt
-      - deno compile --include ./tools/generate-paths/templates --allow-net --allow-read --allow-write --output ./bin/ogma-tool index.ts
+  start: cargo run --
+  build: cargo build --release
+  test: cargo test --locked
+  check: cargo check --locked
+  clippy: cargo clippy --all-targets --all-features -- -D warnings
+  fmt: cargo fmt --all -- --check
+  fmt-fix: cargo fmt --all
+  release: cargo build --release
   install:
-    deps: [ release ]
+    deps:
+      - release
     cmds:
-      - deno install --allow-net --allow-read --allow-write --force --global --name ogma-tool --config ./deno.jsonc index.ts
-  bundlesize: deno run --allow-read ./index.ts bundle-size "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\dist/**/*.js" "F:\VS Projects\Ogma3\Ogma3\wwwroot\js\bundle/**/*.js"
-  generate-imports: deno run --allow-read ./index.ts generate-imports "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
-  generate-preloads: deno run --allow-read ./index.ts generate-preloads "F:\VS Projects\Ogma3\Ogma3\wwwroot\fonts" "fonts"
-  generate-paths: deno run -P=paths ./index.ts generate-paths "out" --verbose --cache --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json"
+      - cargo install --force --path .
+  bundlesize: cargo run --release -- bundle-size "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\js\\dist\\**\\*.js" "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\js\\bundle\\**\\*.js"
+  generate-imports: cargo run --release -- generate-imports "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\fonts" "fonts"
+  generate-preloads: cargo run --release -- generate-preloads "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\fonts" "fonts"
+  generate-paths: cargo run --release -- generate-paths "out" --verbose --cache --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json"

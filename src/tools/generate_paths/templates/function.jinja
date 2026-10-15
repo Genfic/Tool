@@ -1,0 +1,16 @@
+{%- set body = "" -%}
+{%- if is_not_empty -%}
+{%- set body = "body: " ~ body_type_str ~ ", " -%}
+{%- endif -%}
+{%- if params -%}
+{%- set params_str = params|join(", ") -%}
+{%- else -%}
+{%- set params_str = "" -%}
+{%- endif -%}
+{%- set trailing = ", " if params and params|length > 0 else "" %}
+export const {{ id }} = async ({{ body }}{{ params_str }}{{ trailing }}headers?: HeadersInit, options?: RequestInit) => await typedFetch<{ {% for resp in response_type_map %}{{ resp[0] }}: {{ resp[1] }}{% if not loop.last %}; {% endif %}{% endfor %} }, {{ body_type_str }}>({{ quote }}{{ url }}{{ query }}{{ quote }},
+    {{ method|upper }},
+    {{ body_argument }},
+    headers,
+    options,
+);

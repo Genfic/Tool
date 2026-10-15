@@ -1,0 +1,48 @@
+[package]
+name = "ogma-tools"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Rust rewrite of the Ogma3 Deno build tools"
+license = "MIT"
+repository = "https://github.com/Genfic/Tool"
+publish = false
+
+# Make `cargo binstall` (and `cargo binstall --git`) find the GitHub release
+# assets produced by `.github/workflows/release.yml`. Assets are bare binaries
+# named `ogma-tool-<target>[.exe]`.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/ogma-tool-{ target }{ binary-ext }"
+pkg-fmt = "bin"
+
+[[bin]]
+name = "ogma-tool"
+path = "src/main.rs"
+
+[lib]
+name = "ogma_tools"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+indexmap = { version = "2", features = ["serde"] }
+ureq = { version = "3", features = ["json"] }
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+brotli = "8"
+zstd = "0.13"
+glob = "0.3"
+regex = "1"
+minijinja = "3.0.1"
+minijinja-embed = "3.0.1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
+
+[build-dependencies]
+minijinja-embed = "3.0.1"

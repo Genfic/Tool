@@ -1,0 +1,9 @@
+{%- set indent = "    " -%}
+{
+{% for property in properties -%}
+{% if property.description -%}
+{{ indent }}/** {{ property.description }} */
+{% endif -%}
+{{ indent }}{{ property.name }}: {{ property.ty }};
+{% endfor -%}
+}
