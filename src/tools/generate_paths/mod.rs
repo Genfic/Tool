@@ -1,9 +1,18 @@
 //! Port of `tools/generate-paths/generate-paths.ts`.
 //!
-//! The generated TypeScript must match the Deno tool byte-for-byte, so the
+//! The generated TypeScript matches the Deno tool byte-for-byte, so the
 //! control flow mirrors the original closely (including its quirks, such as the
 //! left-to-right order of the schema match chain and JavaScript's enumeration
 //! order for integer-like object keys).
+//!
+//! Two intentional extensions over the original (needed for the OpenAPI 3.2
+//! documents emitted by ASP.NET Core):
+//!
+//! * `application/problem+json` responses are typed from their schema instead
+//!   of falling back to `undefined`.
+//! * Request bodies declared as `multipart/form-data` or
+//!   `application/x-www-form-urlencoded` are typed from their schema when no
+//!   `application/json` body is present.
 
 pub mod render;
 pub mod types;
@@ -375,6 +384,11 @@ fn build_response_type(response: &ApiResponse, verbose: bool) -> (Option<String>
     if let Some(media) = content.get("application/json") {
         return parse_media(media, verbose);
     }
+    // RFC 9457 problem details, the media type ASP.NET Core emits for error
+    // responses; parsed as JSON by `typedFetch` at runtime.
+    if let Some(media) = content.get("application/problem+json") {
+        return parse_media(media, verbose);
+    }
     if let Some(media) = content.get("application/octet-stream") {
         return parse_media(media, verbose);
     }
@@ -451,11 +465,19 @@ fn build_function(path: &str, method: &str, meta: &Route, verbose: bool) -> Func
         "\""
     };
 
-    let body_schema = meta
-        .request_body
-        .as_ref()
-        .and_then(|body| body.content.get("application/json"))
-        .and_then(|media| media.schema.as_ref());
+    // `application/json` first; fall back to form media types, which some
+    // endpoints (e.g. file uploads) declare instead of a JSON body.
+    const BODY_MEDIA_TYPES: [&str; 3] = [
+        "application/json",
+        "multipart/form-data",
+        "application/x-www-form-urlencoded",
+    ];
+    let body_schema = meta.request_body.as_ref().and_then(|body| {
+        BODY_MEDIA_TYPES
+            .iter()
+            .find_map(|key| body.content.get(*key))
+            .and_then(|media| media.schema.as_ref())
+    });
     let body_type = body_schema.map(|schema| parse_type(schema, verbose).0);
     let is_not_empty = body_type.as_deref().is_some_and(|ty| !ty.is_empty());
 

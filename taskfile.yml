@@ -18,3 +18,13 @@ tasks:
   generate-imports: cargo run --release -- generate-imports "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\fonts" "fonts"
   generate-preloads: cargo run --release -- generate-preloads "F:\\VS Projects\\Ogma3\\Ogma3\\wwwroot\\fonts" "fonts"
   generate-paths: cargo run --release -- generate-paths "out" --verbose --cache --path.public="https://localhost:5001/openapi/public.json" --path.internal="https://localhost:5001/openapi/internal.json"
+
+  slop-setup:
+    cmds:
+      - gh auth token | sbx secret set --registry ghcr.io --password-stdin --force
+      - sbx create --name 'ogma-tools' 'ghcr.io/atulin/opencode-sandbox:latest' .
+
+  slop:
+    cmds:
+      - sbx secret set github --sandbox 'ogma-tools' --command "gh auth token"
+      - sbx run --name 'ogma-tools' -e GITHUB_TOKEN=proxy-managed

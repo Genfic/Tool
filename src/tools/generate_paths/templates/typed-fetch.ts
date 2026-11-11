@@ -8,7 +8,7 @@ export type TypedResponse<TResponses extends Record<number, unknown>> = {
     }
 }[keyof TResponses & number];
 
-type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "QUERY";
 
 type ResponseType = {
     [K in keyof Response]: Response[K] extends (
@@ -30,6 +30,7 @@ export const PUT: HttpMethod = "PUT";
 export const PATCH: HttpMethod = "PATCH";
 export const DELETE: HttpMethod = "DELETE";
 export const HEAD: HttpMethod = "HEAD";
+export const QUERY: HttpMethod = "QUERY";
 
 export type KnownHeaders =
     | "Accept"
@@ -68,13 +69,14 @@ export async function typedFetch<TResponses extends Record<number, unknown>, TBo
     headers?: HeadersInit,
     options?: RequestOptions,
 ): Promise<TypedResponse<TResponses>> {
+  const isFormBody = body instanceof FormData || body instanceof URLSearchParams;
   const res = await fetch(url, {
       method: method as string,
       headers: {
-          "content-type": "application/json",
+          ...(isFormBody ? {} : { "content-type": "application/json" }),
           ...headers,
       },
-      body: body && JSON.stringify(body),
+      body: body && (isFormBody ? body : JSON.stringify(body)),
       ...options,
   } as RequestInit);
 

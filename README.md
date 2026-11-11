@@ -183,6 +183,14 @@ platform binaries when a `v*` tag is pushed.
   byte-identical.
 - A missing or empty response schema is handled leniently (it produces an empty
   response type) instead of throwing.
+- Responses declared as `application/problem+json` are typed from their schema
+  instead of falling back to `undefined` (RFC 9457 problem details, the error
+  media type emitted by ASP.NET Core).
+- Request bodies declared as `multipart/form-data` or
+  `application/x-www-form-urlencoded` are typed from their schema when the
+  operation has no `application/json` body. The shared `typed-fetch.ts` passes
+  `FormData`/`URLSearchParams` bodies through unstringified so these endpoints
+  can be called with real form payloads.
 - Error text uses Rust/`anyhow` phrasing; command names, flags and exit codes
   match the original.
 

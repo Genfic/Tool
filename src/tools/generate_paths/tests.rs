@@ -194,6 +194,62 @@ fn builds_a_function_with_body_params_and_responses() {
 }
 
 #[test]
+fn builds_response_types_from_problem_json() {
+    let response: ApiResponse = serde_json::from_str(
+        r##"{"content":{"application/problem+json":{"schema":{"$ref":"#/components/schemas/ProblemDetails"}}}}"##,
+    )
+    .unwrap();
+    assert_eq!(
+        build_response_type(&response, false),
+        (Some("ProblemDetails".to_string()), false)
+    );
+
+    // `application/json` keeps precedence when both media types are present.
+    let mixed: ApiResponse = serde_json::from_str(
+        r##"{"content":{"application/problem+json":{"schema":{"$ref":"#/components/schemas/Problem"}},"application/json":{"schema":{"$ref":"#/components/schemas/Foo"}}}}"##,
+    )
+    .unwrap();
+    assert_eq!(
+        build_response_type(&mixed, false),
+        (Some("Foo".to_string()), false)
+    );
+}
+
+#[test]
+fn builds_a_body_from_form_media_types() {
+    // Without a JSON body, `multipart/form-data` (listed first in the document)
+    // provides the body schema.
+    let route: Route = serde_json::from_value(serde_json::json!({
+        "operationId": "uploadFile",
+        "requestBody": {"content": {
+            "multipart/form-data": {"schema": {"$ref": "#/components/schemas/UploadFileQuery"}},
+            "application/x-www-form-urlencoded": {"schema": {"$ref": "#/components/schemas/UploadFileQuery"}}
+        }},
+        "responses": {"200": {"description": "ok"}}
+    }))
+    .unwrap();
+
+    let result = build_function("/api/files/upload", "post", &route, false);
+    assert_eq!(result.body_type.as_deref(), Some("UploadFileQuery"));
+    assert!(result.func.contains("body: UploadFileQuery, "));
+    assert!(result.func.contains(",\n    body,\n"));
+
+    // `application/json` keeps precedence over the form media types.
+    let json_route: Route = serde_json::from_value(serde_json::json!({
+        "operationId": "postThing",
+        "requestBody": {"content": {
+            "multipart/form-data": {"schema": {"$ref": "#/components/schemas/UploadFileQuery"}},
+            "application/json": {"schema": {"$ref": "#/components/schemas/Item"}}
+        }},
+        "responses": {"200": {"description": "ok"}}
+    }))
+    .unwrap();
+
+    let result = build_function("/things", "post", &json_route, false);
+    assert_eq!(result.body_type.as_deref(), Some("Item"));
+}
+
+#[test]
 fn a_request_body_without_a_schema_becomes_undefined() {
     let route: Route = serde_json::from_value(serde_json::json!({
         "operationId": "ping",
